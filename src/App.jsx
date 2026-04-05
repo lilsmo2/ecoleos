@@ -833,7 +833,7 @@ export default function App() {
               <div style={{ padding: 14, background: "#1C1F2E", borderRadius: 8, border: "1px solid #2A2E42" }}>
                 {superErr && <div style={S.err}>{superErr}</div>}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <Field label="Identifiant" value={su} onChange={setSu} placeholder="superadmin" />
+                  <Field label="Identifiant" value={su} onChange={setSu} />
                   <div style={{ marginBottom: 16 }}>
                     <div style={S.label}>Mot de passe</div>
                     <input style={S.input} type="password" value={sp} onChange={e => setSp(e.target.value)} placeholder="••••••" onKeyDown={e => { if (e.key === "Enter") doSuper(); }} />
