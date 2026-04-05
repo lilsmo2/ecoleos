@@ -244,7 +244,8 @@ export default function App() {
 
   // super admin finances
   const [superPayments, setSuperPayments] = useState([]);
-  const [superFinPage, setSuperFinPage] = useState("schools"); // "schools" | "finances"
+  const [superFinPage, setSuperFinPage] = useState("schools"); // "schools" | "finances" | "licences"
+  const [licForm, setLicForm] = useState({ school: "", plan: "3", type: "P", devices: "3", expiry: new Date(Date.now() + 365*86400000).toISOString().slice(0,10), generated: "", copied: false });
 
   // modals & forms
   const [modal, setModal] = useState(null);
@@ -961,6 +962,7 @@ export default function App() {
         <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #2A2E42", marginBottom: 24 }}>
           <button style={tabStyle(superFinPage === "schools")} onClick={() => { setSuperFinPage("schools"); setSearch(""); }}>Établissements</button>
           <button style={tabStyle(superFinPage === "finances")} onClick={() => { setSuperFinPage("finances"); setSearch(""); }}>Finances Plateforme</button>
+          <button style={tabStyle(superFinPage === "licences")} onClick={() => { setSuperFinPage("licences"); setSearch(""); }}>Licences</button>
         </div>
 
         {/* ── Schools Tab ── */}
@@ -1163,6 +1165,73 @@ export default function App() {
             </Modal2>
           )}
         </>)}
+
+        {superFinPage === "licences" && (() => {
+          const PLAN_LABELS = { "0": "Essai", "1": "Basique", "2": "Standard", "3": "Premium" };
+          const generateKey = async () => {
+            const sc = (licForm.school.toUpperCase().padEnd(6, "0")).slice(0, 6);
+            const payload = sc + licForm.plan + licForm.type + String(Number(licForm.devices)).padStart(2, "0") + (licForm.type === "P" ? "99991231" : licForm.expiry.replace(/-/g, ""));
+            if (payload.length !== 18) return;
+            const secret = "ecoleos_license_secret_change_me_in_production_2025";
+            const enc = new TextEncoder();
+            const keyMat = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+            const sigBuf = await crypto.subtle.sign("HMAC", keyMat, enc.encode(payload));
+            const toHex = b => Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,"0")).join("").toUpperCase();
+            const payloadHex = Array.from(enc.encode(payload)).map(b => b.toString(16).padStart(2,"0")).join("").toUpperCase();
+            const sig = toHex(sigBuf).slice(0, 20);
+            const full = payloadHex + sig;
+            const key = "ECOLEOS-" + full.match(/.{1,6}/g).join("-");
+            setLicForm(f => ({ ...f, generated: key, copied: false }));
+          };
+          return (
+            <div style={{ maxWidth: 560 }}>
+              <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24, marginBottom: 20 }}>
+                <h3 style={{ marginBottom: 20, fontSize: 16 }}>Générer une Clé de Licence</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <div style={S.label}>Code École (max 6 car.)</div>
+                    <input style={S.input} value={licForm.school} onChange={e => setLicForm(f => ({ ...f, school: e.target.value.toUpperCase().slice(0,6), generated: "", copied: false }))} placeholder="ECOLE1" />
+                  </div>
+                  <div>
+                    <div style={S.label}>Appareils max</div>
+                    <input style={S.input} type="number" min="1" max="99" value={licForm.devices} onChange={e => setLicForm(f => ({ ...f, devices: e.target.value, generated: "", copied: false }))} />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <div style={S.label}>Forfait</div>
+                    <select style={S.input} value={licForm.plan} onChange={e => setLicForm(f => ({ ...f, plan: e.target.value, generated: "", copied: false }))}>
+                      {Object.entries(PLAN_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={S.label}>Type</div>
+                    <select style={S.input} value={licForm.type} onChange={e => setLicForm(f => ({ ...f, type: e.target.value, generated: "", copied: false }))}>
+                      <option value="P">Permanent</option>
+                      <option value="S">Abonnement</option>
+                    </select>
+                  </div>
+                </div>
+                {licForm.type === "S" && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={S.label}>Date d'expiration</div>
+                    <input style={S.input} type="date" value={licForm.expiry} onChange={e => setLicForm(f => ({ ...f, expiry: e.target.value, generated: "", copied: false }))} />
+                  </div>
+                )}
+                <Btn onClick={generateKey} disabled={!licForm.school.trim()}>Générer la clé</Btn>
+              </div>
+              {licForm.generated ? (
+                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 20 }}>
+                  <div style={S.label}>Clé générée</div>
+                  <div style={{ fontFamily: "monospace", fontSize: 13, color: "#A29BFE", wordBreak: "break-all", padding: "12px 0", letterSpacing: 1 }}>{licForm.generated}</div>
+                  <Btn variant={licForm.copied ? "ghost" : "primary"} small onClick={() => { navigator.clipboard.writeText(licForm.generated); setLicForm(f => ({ ...f, copied: true })); }}>
+                    {licForm.copied ? "Copié ✓" : "Copier"}
+                  </Btn>
+                </div>
+              ) : null}
+            </div>
+          );
+        })()}
 
         {confirm && <ConfirmModal message={confirm.message} onConfirm={runConfirm} onCancel={() => setConfirm(null)} />}
       </div>
