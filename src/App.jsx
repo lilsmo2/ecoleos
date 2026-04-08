@@ -69,7 +69,7 @@ const NAV_PAGES = [
   { k: "docs", l: "Documents", icon: "⊕", roles: ["admin", "secretaire"] },
   { k: "cant", l: "Cantine", icon: "⊙", roles: ["admin", "secretaire", "comptable"] },
   { k: "lib", l: "Bibliothèque", icon: "⊚", roles: ["admin", "secretaire"] },
-  { k: "msg", l: "Messagerie", icon: "⊛", roles: ["admin", "directeur", "secretaire", "enseignant", "comptable"] },
+  { k: "msg", l: "Annonces", icon: "⊛", roles: ["admin", "directeur", "secretaire", "enseignant", "comptable"] },
   { k: "sub", l: "Abonnement", icon: "◈", roles: ["admin"] },
 ];
 
@@ -241,6 +241,8 @@ export default function App() {
   const [loans, setLoans] = useState([]);
   const [messages, setMessages] = useState([]);
   const [payroll, setPayroll] = useState([]);
+  const [studentPayments, setStudentPayments] = useState([]);
+  const [classTuition, setClassTuition] = useState({}); // { [grade]: amountDue }
 
   // super admin finances
   const [superPayments, setSuperPayments] = useState([]);
@@ -382,6 +384,8 @@ export default function App() {
   const saveLoans = useCallback(async (list) => { setSaving(true); setLoans(list); await db.set("eos3_lns_" + sk, list); setSaving(false); }, [sk]);
   const saveMessages = useCallback(async (list) => { setSaving(true); setMessages(list); await db.set("eos3_msg_" + sk, list); setSaving(false); }, [sk]);
   const savePayroll = useCallback(async (list) => { setSaving(true); setPayroll(list); await db.set("eos3_prl_" + sk, list); setSaving(false); }, [sk]);
+  const saveStudentPayments = useCallback(async (list) => { setSaving(true); setStudentPayments(list); await db.set("eos3_stup_" + sk, list); setSaving(false); }, [sk]);
+  const saveClassTuition = useCallback(async (obj) => { setSaving(true); setClassTuition(obj); await db.set("eos3_tuition_" + sk, obj); setSaving(false); }, [sk]);
 
   const saveSuperPayments = useCallback(async (list) => {
     setSaving(true);
@@ -411,6 +415,8 @@ export default function App() {
     const lns = await db.get("eos3_lns_" + id); setLoans(lns || []);
     const msg = await db.get("eos3_msg_" + id); setMessages(msg || []);
     const prl = await db.get("eos3_prl_" + id); setPayroll(prl || []);
+    const stup = await db.get("eos3_stup_" + id); setStudentPayments(stup || []);
+    const tuit = await db.get("eos3_tuition_" + id); setClassTuition(tuit || {});
     setLoading(false);
   }, []);
 
@@ -1307,13 +1313,15 @@ export default function App() {
   // ── Finance CRUD ──
   const addTransaction = async () => {
     if (!form.label || !form.amount || isNaN(Number(form.amount))) return;
-    await saveFin([...finances, { id: genId(), label: form.label, amount: Number(form.amount), type: form.type || "income", category: form.category || FIN_CATEGORIES.income[0], date: form.date || new Date().toISOString().slice(0, 10), note: form.note || "" }]);
+    const cat = (form.category === "Autre revenu" || form.category === "Autre dépense") && form.categoryCustom ? form.categoryCustom : (form.category || FIN_CATEGORIES.income[0]);
+    await saveFin([...finances, { id: genId(), label: form.label, amount: Number(form.amount), type: form.type || "income", category: cat, date: form.date || new Date().toISOString().slice(0, 10), note: form.note || "" }]);
     setModal(null);
   };
 
   const editTransaction = async () => {
     if (!form.label || !form.amount || isNaN(Number(form.amount))) return;
-    await saveFin(finances.map(t => t.id === form.id ? { ...t, label: form.label, amount: Number(form.amount), type: form.type, category: form.category, date: form.date, note: form.note || "" } : t));
+    const cat = (form.category === "Autre revenu" || form.category === "Autre dépense") && form.categoryCustom ? form.categoryCustom : form.category;
+    await saveFin(finances.map(t => t.id === form.id ? { ...t, label: form.label, amount: Number(form.amount), type: form.type, category: cat, date: form.date, note: form.note || "" } : t));
     setModal(null);
   };
 
@@ -1333,7 +1341,8 @@ export default function App() {
       month = form.month || (budgetYear + "-" + String(new Date().getMonth() + 1).padStart(2, "0"));
       year = Number(month.split("-")[0]);
     }
-    const entry = { id: genId(), category: form.category, type: form.type || "expense", planned: Number(form.planned), scope, month, year, note: form.note || "" };
+    const cat = (form.category === "Autre revenu" || form.category === "Autre dépense") && form.budgetCatCustom ? form.budgetCatCustom : form.category;
+    const entry = { id: genId(), category: cat, type: form.type || "expense", planned: Number(form.planned), scope, month, year, note: form.note || "" };
     if (scope === "activity") entry.activity = form.activity || "";
     await saveBudgets([...budgets, entry]);
     setModal(null);
@@ -1347,7 +1356,8 @@ export default function App() {
       month = form.month || (budgetYear + "-" + String(new Date().getMonth() + 1).padStart(2, "0"));
       year = Number(month.split("-")[0]);
     }
-    await saveBudgets(budgets.map(b => b.id === form.id ? { ...b, category: form.category, type: form.type, planned: Number(form.planned), scope, month, year, activity: scope === "activity" ? (form.activity || "") : undefined, note: form.note || "" } : b));
+    const cat = (form.category === "Autre revenu" || form.category === "Autre dépense") && form.budgetCatCustom ? form.budgetCatCustom : form.category;
+    await saveBudgets(budgets.map(b => b.id === form.id ? { ...b, category: cat, type: form.type, planned: Number(form.planned), scope, month, year, activity: scope === "activity" ? (form.activity || "") : undefined, note: form.note || "" } : b));
     setModal(null);
   };
 
@@ -1518,18 +1528,28 @@ export default function App() {
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                   <SearchBar value={search} onChange={setSearch} placeholder="Rechercher un élève..." />
-                  <Btn onClick={() => { setForm({ name: "", grade: NIV[0], gender: "", dob: "", birthPlace: "", nationality: "", classId: "", prevSchool: "", enrollYear: String(new Date().getFullYear()), parent: "", parentRel: "", parentPhone: "", parentEmail: "", address: "", bloodType: "", allergies: "", notes: "" }); setModal("addStu"); }}>+ Ajouter un élève</Btn>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Btn variant="ghost" onClick={() => setModal("classTuition")}>⚙ Frais par niveau</Btn>
+                    <Btn onClick={() => { setForm({ name: "", grade: NIV[0], gender: "", dob: "", birthPlace: "", nationality: "", classId: "", prevSchool: "", enrollYear: String(new Date().getFullYear()), parent: "", parentRel: "", parentPhone: "", parentEmail: "", address: "", bloodType: "", allergies: "", notes: "" }); setModal("addStu"); }}>+ Ajouter un élève</Btn>
+                  </div>
                 </div>
                 <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={S.table}>
-                      <thead><tr><th style={S.th}>Nom</th><th style={S.th}>Niveau</th><th style={S.th}>Parent</th><th style={S.th}>Statut</th><th style={S.th}>Actions</th></tr></thead>
+                      <thead><tr><th style={S.th}>Nom</th><th style={S.th}>Niveau</th><th style={S.th}>Parent</th><th style={S.th}>Paiement</th><th style={S.th}>Statut</th><th style={S.th}>Actions</th></tr></thead>
                       <tbody>
-                        {filteredStudents.map(s => (
+                        {filteredStudents.map(s => {
+                          const amountDue = Number(classTuition[s.grade] || 0);
+                          const paid = studentPayments.filter(p => p.studentId === s.id).reduce((a, p) => a + Number(p.amount || 0), 0);
+                          const payBadge = amountDue === 0 ? null : paid >= amountDue ? { color: "green", label: "Payé" } : paid > 0 ? { color: "amber", label: `Partiel — Reste ${fmtCFA(amountDue - paid)}` } : { color: "red", label: "Impayé" };
+                          return (
                           <tr key={s.id}>
                             <td style={{ ...S.td, fontWeight: 500, color: "#7C6BFF", cursor: "pointer", textDecoration: "underline" }} onClick={() => { setForm({ profileId: s.id }); setModal("stuProfile"); }}>{s.name}</td>
                             <td style={S.td}>{s.grade}</td>
                             <td style={S.td}>{s.parent || "—"}</td>
+                            <td style={S.td}>
+                              {payBadge ? <span style={S.badge(payBadge.color)}>{payBadge.label}</span> : <span style={{ color: "#636985", fontSize: 12 }}>—</span>}
+                            </td>
                             <td style={S.td}>
                               <span style={{ ...S.badge(s.status === "actif" ? "green" : "red"), cursor: "pointer" }} onClick={() => toggleStudentStatus(s.id)}>
                                 {s.status}
@@ -1538,13 +1558,23 @@ export default function App() {
                             <td style={S.td}>
                               <div style={{ display: "flex", gap: 6 }}>
                                 <Btn variant="ghost" small onClick={() => { setForm({ ...s }); setModal("editStu"); }}>Modifier</Btn>
+                                <Btn variant="ghost" small onClick={() => { setForm({ payStudentId: s.id, payStudentName: s.name, payAmount: "", payDate: new Date().toISOString().slice(0,10), payNote: "" }); setModal("stuPayments"); }}>💰</Btn>
+                                {payBadge && payBadge.color !== "green" && s.parentPhone && (
+                                  <button title="Envoyer rappel WhatsApp" style={{ ...S.btn, ...S.ghost, padding: "4px 8px", fontSize: 14 }} onClick={() => {
+                                    const phone = s.parentPhone.replace(/[\s\-\+\(\)]/g, "");
+                                    const rest = amountDue > 0 ? fmtCFA(amountDue - paid) : "";
+                                    const msg = encodeURIComponent(`Bonjour ${s.parent || ""},\n\nCeci est un rappel concernant les frais de scolarité de ${s.name} (${s.grade}).\nMontant restant : ${rest}.\n\nMerci de régulariser votre situation.\n— ${school?.name || ""}`);
+                                    window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+                                  }}>📲</button>
+                                )}
                                 <Btn variant="danger" small onClick={() => delStudent(s.id)}>Suppr.</Btn>
                               </div>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                         {filteredStudents.length === 0 && (
-                          <tr><td colSpan={5}><EmptyState icon="◎" title={search ? "Aucun résultat" : "Aucun élève inscrit"} subtitle={search ? "Essayez un autre terme" : "Ajoutez votre premier élève"} /></td></tr>
+                          <tr><td colSpan={6}><EmptyState icon="◎" title={search ? "Aucun résultat" : "Aucun élève inscrit"} subtitle={search ? "Essayez un autre terme" : "Ajoutez votre premier élève"} /></td></tr>
                         )}
                       </tbody>
                     </table>
@@ -1733,6 +1763,69 @@ export default function App() {
                     </Modal2>
                   );
                 })()}
+
+                {/* ── Student Payments Modal ── */}
+                {modal === "stuPayments" && (() => {
+                  const stuPays = studentPayments.filter(p => p.studentId === form.payStudentId);
+                  const totalPaid = stuPays.reduce((a, p) => a + Number(p.amount || 0), 0);
+                  const amountDue = Number(classTuition[students.find(s => s.id === form.payStudentId)?.grade] || 0);
+                  return (
+                    <Modal2 title={`Paiements — ${form.payStudentName}`} onClose={() => setModal(null)}
+                      footer={<Btn variant="ghost" onClick={() => setModal(null)}>Fermer</Btn>}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+                        {[["Montant dû", fmtCFA(amountDue)],["Payé", fmtCFA(totalPaid)],["Reste", fmtCFA(Math.max(0, amountDue - totalPaid))]].map(([l,v]) => (
+                          <div key={l} style={{ background: "#1C1F2E", borderRadius: 8, padding: "12px 16px" }}>
+                            <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 4 }}>{l}</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: "#E8EAF0" }}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#636985", marginBottom: 8 }}>Historique des paiements</div>
+                        {stuPays.length === 0 && <div style={{ fontSize: 13, color: "#636985" }}>Aucun paiement enregistré.</div>}
+                        {stuPays.map(p => (
+                          <div key={p.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #2A2E42", fontSize: 13 }}>
+                            <span>{p.date} {p.note ? `— ${p.note}` : ""}</span>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                              <span style={{ fontWeight: 600, color: "#00B894" }}>{fmtCFA(Number(p.amount))}</span>
+                              <Btn variant="danger" small onClick={async () => await saveStudentPayments(studentPayments.filter(x => x.id !== p.id))}>✕</Btn>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ borderTop: "1px solid #2A2E42", paddingTop: 16 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#636985", marginBottom: 10 }}>Enregistrer un paiement</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                          <div><div style={S.label}>Montant (FCFA)</div><input style={{ ...S.input, marginTop: 6 }} type="number" placeholder="50000" value={form.payAmount || ""} onChange={e => setForm({ ...form, payAmount: e.target.value })} /></div>
+                          <div><div style={S.label}>Date</div><input style={{ ...S.input, marginTop: 6 }} type="date" value={form.payDate || ""} onChange={e => setForm({ ...form, payDate: e.target.value })} /></div>
+                        </div>
+                        <div style={{ marginBottom: 10 }}><div style={S.label}>Note</div><input style={{ ...S.input, marginTop: 6 }} placeholder="Reçu n°, mode de paiement…" value={form.payNote || ""} onChange={e => setForm({ ...form, payNote: e.target.value })} /></div>
+                        <Btn loading={saving} onClick={async () => {
+                          if (!form.payAmount || isNaN(Number(form.payAmount))) return;
+                          await saveStudentPayments([...studentPayments, { id: genId(), studentId: form.payStudentId, amount: Number(form.payAmount), date: form.payDate || new Date().toISOString().slice(0,10), note: form.payNote || "" }]);
+                          setForm({ ...form, payAmount: "", payNote: "" });
+                        }}>+ Ajouter le paiement</Btn>
+                      </div>
+                    </Modal2>
+                  );
+                })()}
+
+                {/* ── Class Tuition Config Modal ── */}
+                {modal === "classTuition" && (
+                  <Modal2 title="Frais de scolarité par niveau" onClose={() => setModal(null)}
+                    footer={<Btn variant="ghost" onClick={() => setModal(null)}>Fermer</Btn>}>
+                    <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>Définissez le montant annuel dû par niveau. Laissez vide pour ne pas suivre ce niveau.</div>
+                    {NIV.map(n => (
+                      <div key={n} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                        <div style={{ fontSize: 13, color: "#E8EAF0" }}>{n}</div>
+                        <input style={{ ...S.input, marginTop: 0 }} type="number" placeholder="0" value={classTuition[n] || ""} onChange={async e => {
+                          const updated = { ...classTuition, [n]: e.target.value ? Number(e.target.value) : 0 };
+                          await saveClassTuition(updated);
+                        }} />
+                      </div>
+                    ))}
+                  </Modal2>
+                )}
               </div>
             )}
 
@@ -1830,7 +1923,7 @@ export default function App() {
               <div>
                 {/* Sub-tabs */}
                 <div style={{ display: "flex", gap: 4, marginBottom: 24, background: "#161822", border: "1px solid #2A2E42", borderRadius: 8, padding: 4, width: "fit-content" }}>
-                  {[["txn", "Transactions"], ["payroll", "Paie du Personnel"]].map(([k, l]) => (
+                  {[["txn", "Transactions"], ["payroll", "Paie du Personnel"], ["rapports", "Rapports"]].map(([k, l]) => (
                     <button key={k} onClick={() => setForm({ ...form, finTab: k })} style={{ padding: "6px 18px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, background: (form.finTab || "txn") === k ? "#7C6BFF" : "transparent", color: (form.finTab || "txn") === k ? "#fff" : "#636985", transition: "all 0.15s" }}>{l}</button>
                   ))}
                 </div>
@@ -2044,15 +2137,111 @@ export default function App() {
                       </div>
                       <div style={{ marginBottom: 16 }}>
                         <div style={S.label}>Catégorie</div>
-                        <select style={S.input} value={form.category || ""} onChange={e => setForm({ ...form, category: e.target.value })}>
+                        <select style={S.input} value={form.category || ""} onChange={e => setForm({ ...form, category: e.target.value, categoryCustom: "" })}>
                           {(FIN_CATEGORIES[form.type] || FIN_CATEGORIES.income).map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
+                        {(form.category === "Autre revenu" || form.category === "Autre dépense") && (
+                          <input style={{ ...S.input, marginTop: 6 }} placeholder="Précisez la catégorie…" value={form.categoryCustom || ""} onChange={e => setForm({ ...form, categoryCustom: e.target.value })} />
+                        )}
                       </div>
                     </div>
                     <Field label="Note (optionnel)" value={form.note || ""} onChange={v => setForm({ ...form, note: v })} placeholder="Détails supplémentaires" />
                   </Modal2>
                 )}
                 </>}
+
+                {/* ── Rapports tab ── */}
+                {form.finTab === "rapports" && (() => {
+                  const period = form.rapportPeriod || "mensuel";
+                  const now = new Date();
+                  const getTrimester = (dateStr) => {
+                    const m = new Date(dateStr).getMonth() + 1; // 1-12
+                    if (m >= 10 || m <= 12) return "T1";
+                    if (m >= 1 && m <= 3) return "T2";
+                    if (m >= 4 && m <= 6) return "T3";
+                    return null;
+                  };
+                  const currentTrimester = getTrimester(now.toISOString());
+                  const selectedTrimester = form.rapportTrimester || currentTrimester || "T1";
+                  const selectedMonth = form.rapportMonth || now.toISOString().slice(0, 7);
+                  const selectedWeek = form.rapportWeek || now.toISOString().slice(0, 10);
+                  const selectedDay = form.rapportDay || now.toISOString().slice(0, 10);
+
+                  const inPeriod = (dateStr) => {
+                    if (!dateStr) return false;
+                    if (period === "journalier") return dateStr === selectedDay;
+                    if (period === "hebdomadaire") {
+                      const d = new Date(dateStr), ref = new Date(selectedWeek);
+                      const startOfWeek = new Date(ref); startOfWeek.setDate(ref.getDate() - ref.getDay() + 1);
+                      const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6);
+                      return d >= startOfWeek && d <= endOfWeek;
+                    }
+                    if (period === "mensuel") return dateStr.startsWith(selectedMonth);
+                    if (period === "trimestriel") return getTrimester(dateStr) === selectedTrimester;
+                    return false;
+                  };
+
+                  const finRows = finances.filter(t => inPeriod(t.date)).map(t => ({ ...t, source: "txn" }));
+                  const payRows = studentPayments.filter(p => inPeriod(p.date)).map(p => {
+                    const stu = students.find(s => s.id === p.studentId);
+                    return { id: p.id, date: p.date, label: stu ? `Paiement — ${stu.name}` : "Paiement élève", amount: p.amount, type: "income", category: "Frais de scolarité", note: p.note, source: "pay" };
+                  });
+                  const allRows = [...finRows, ...payRows].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+                  const totalIn = allRows.filter(r => r.type === "income").reduce((a, r) => a + Number(r.amount), 0);
+                  const totalOut = allRows.filter(r => r.type === "expense").reduce((a, r) => a + Number(r.amount), 0);
+
+                  return (
+                    <div>
+                      {/* Controls */}
+                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 20 }}>
+                        <div style={{ display: "flex", gap: 4, background: "#161822", border: "1px solid #2A2E42", borderRadius: 8, padding: 4 }}>
+                          {[["journalier","Jour"],["hebdomadaire","Semaine"],["mensuel","Mois"],["trimestriel","Trimestre"]].map(([k,l]) => (
+                            <button key={k} onClick={() => setForm({ ...form, rapportPeriod: k })} style={{ padding: "5px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: period === k ? "#7C6BFF" : "transparent", color: period === k ? "#fff" : "#636985" }}>{l}</button>
+                          ))}
+                        </div>
+                        {period === "journalier" && <input type="date" style={{ ...S.input, width: "auto", marginTop: 0 }} value={selectedDay} onChange={e => setForm({ ...form, rapportDay: e.target.value })} />}
+                        {period === "hebdomadaire" && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#9BA1B7" }}><span>Semaine du</span><input type="date" style={{ ...S.input, width: "auto", marginTop: 0 }} value={selectedWeek} onChange={e => setForm({ ...form, rapportWeek: e.target.value })} /></div>}
+                        {period === "mensuel" && <input type="month" style={{ ...S.input, width: "auto", marginTop: 0 }} value={selectedMonth} onChange={e => setForm({ ...form, rapportMonth: e.target.value })} />}
+                        {period === "trimestriel" && (
+                          <select style={{ ...S.input, width: "auto", marginTop: 0 }} value={selectedTrimester} onChange={e => setForm({ ...form, rapportTrimester: e.target.value })}>
+                            <option value="T1">T1 (Oct–Déc)</option>
+                            <option value="T2">T2 (Jan–Mar)</option>
+                            <option value="T3">T3 (Avr–Juin)</option>
+                          </select>
+                        )}
+                      </div>
+                      {/* Summary cards */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 24 }}>
+                        {[["Encaissé", fmtCFA(totalIn), "green"],["Dépensé", fmtCFA(totalOut), "red"],["Solde", fmtCFA(totalIn - totalOut), totalIn - totalOut >= 0 ? "green" : "red"]].map(([l,v,c]) => (
+                          <div key={l} style={{ ...S.stat, borderColor: c === "green" ? "rgba(0,184,148,0.2)" : "rgba(255,107,107,0.2)" }}>
+                            <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 6 }}>{l}</div>
+                            <div style={{ fontSize: 20, fontWeight: 700, color: c === "green" ? "#00B894" : "#FF6B6B" }}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Table */}
+                      <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                        <div style={{ overflowX: "auto" }}>
+                          <table style={S.table}>
+                            <thead><tr><th style={S.th}>Date</th><th style={S.th}>Libellé</th><th style={S.th}>Catégorie</th><th style={S.th}>Type</th><th style={S.th}>Montant</th></tr></thead>
+                            <tbody>
+                              {allRows.map(r => (
+                                <tr key={r.id + r.source}>
+                                  <td style={S.td}>{r.date}</td>
+                                  <td style={{ ...S.td, color: "#E8EAF0" }}>{r.label}</td>
+                                  <td style={S.td}>{r.category}</td>
+                                  <td style={S.td}><span style={S.badge(r.type === "income" ? "green" : "red")}>{r.type === "income" ? "Revenu" : "Dépense"}</span></td>
+                                  <td style={{ ...S.td, fontWeight: 600, color: r.type === "income" ? "#00B894" : "#FF6B6B" }}>{fmtCFA(Number(r.amount))}</td>
+                                </tr>
+                              ))}
+                              {allRows.length === 0 && <tr><td colSpan={5}><EmptyState icon="◆" title="Aucune transaction" subtitle="Pour la période sélectionnée" /></td></tr>}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -2242,9 +2431,12 @@ export default function App() {
                       </div>
                       <div style={{ marginBottom: 16 }}>
                         <div style={S.label}>Catégorie</div>
-                        <select style={S.input} value={form.category || ""} onChange={e => setForm({ ...form, category: e.target.value })}>
+                        <select style={S.input} value={form.category || ""} onChange={e => setForm({ ...form, category: e.target.value, budgetCatCustom: "" })}>
                           {(BUDGET_CATEGORIES[form.type] || BUDGET_CATEGORIES.expense).map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
+                        {(form.category === "Autre revenu" || form.category === "Autre dépense") && (
+                          <input style={{ ...S.input, marginTop: 6 }} placeholder="Précisez la catégorie…" value={form.budgetCatCustom || ""} onChange={e => setForm({ ...form, budgetCatCustom: e.target.value })} />
+                        )}
                       </div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -2482,14 +2674,18 @@ export default function App() {
                   <Modal2 title="Saisir une note" onClose={() => setModal(null)}
                     footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={() => setModal(null)}>Annuler</Btn><Btn loading={saving} onClick={async () => {
                       if (!form.gradeClass || !form.subject || form.score === "" || !form.gradeStudent) return;
-                      await saveGrades([...grades, { id: genId(), classId: form.gradeClass, studentId: form.gradeStudent, subject: form.subject, score: Number(form.score), maxScore: Number(form.maxScore) || 20, term: form.gradeTerm || TERMS[0], year: new Date().getFullYear(), note: form.gradeNote || "" }]);
+                      const subj = form.subject === "Autre" && form.subjectCustom ? form.subjectCustom : form.subject;
+                      await saveGrades([...grades, { id: genId(), classId: form.gradeClass, studentId: form.gradeStudent, subject: subj, score: Number(form.score), maxScore: Number(form.maxScore) || 20, term: form.gradeTerm || TERMS[0], year: new Date().getFullYear(), note: form.gradeNote || "" }]);
                       setModal(null);
                     }}>Enregistrer</Btn></div>}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <div style={{ marginBottom: 16 }}><div style={S.label}>Matière</div>
-                        <select style={S.input} value={form.subject || SUBJECTS[0]} onChange={e => setForm({ ...form, subject: e.target.value })}>
+                        <select style={S.input} value={form.subject || SUBJECTS[0]} onChange={e => setForm({ ...form, subject: e.target.value, subjectCustom: "" })}>
                           {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
+                        {form.subject === "Autre" && (
+                          <input style={{ ...S.input, marginTop: 6 }} placeholder="Précisez la matière…" value={form.subjectCustom || ""} onChange={e => setForm({ ...form, subjectCustom: e.target.value })} />
+                        )}
                       </div>
                       <div style={{ marginBottom: 16 }}><div style={S.label}>Élève</div>
                         <select style={S.input} value={form.gradeStudent || ""} onChange={e => setForm({ ...form, gradeStudent: e.target.value })}>
@@ -2552,7 +2748,8 @@ export default function App() {
                   <Modal2 title="Créneau horaire" onClose={() => setModal(null)}
                     footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={() => setModal(null)}>Annuler</Btn><Btn loading={saving} onClick={async () => {
                       if (!form.tmtClass || !form.tmtSubject) return;
-                      const entry = { id: form.editTmtId || genId(), classId: form.tmtClass, day: form.tmtDay, subject: form.tmtSubject, start: form.tmtStart || "08:00", end: form.tmtEnd || "10:00", teacherId: form.tmtTeacher || "", room: form.tmtRoom || "" };
+                      const tmtSubj = form.tmtSubject === "Autre" && form.tmtSubjectCustom ? form.tmtSubjectCustom : form.tmtSubject;
+                      const entry = { id: form.editTmtId || genId(), classId: form.tmtClass, day: form.tmtDay, subject: tmtSubj, start: form.tmtStart || "08:00", end: form.tmtEnd || "10:00", teacherId: form.tmtTeacher || "", room: form.tmtRoom || "" };
                       if (form.editTmtId) await saveTimetable(timetable.map(t => t.id === form.editTmtId ? entry : t));
                       else await saveTimetable([...timetable, entry]);
                       setForm({ ...form, editTmtId: null });
@@ -2565,9 +2762,12 @@ export default function App() {
                         </select>
                       </div>
                       <div style={{ marginBottom: 16 }}><div style={S.label}>Matière</div>
-                        <select style={S.input} value={form.tmtSubject || SUBJECTS[0]} onChange={e => setForm({ ...form, tmtSubject: e.target.value })}>
+                        <select style={S.input} value={form.tmtSubject || SUBJECTS[0]} onChange={e => setForm({ ...form, tmtSubject: e.target.value, tmtSubjectCustom: "" })}>
                           {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
+                        {form.tmtSubject === "Autre" && (
+                          <input style={{ ...S.input, marginTop: 6 }} placeholder="Précisez la matière…" value={form.tmtSubjectCustom || ""} onChange={e => setForm({ ...form, tmtSubjectCustom: e.target.value })} />
+                        )}
                       </div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -2626,7 +2826,8 @@ export default function App() {
                   <Modal2 title={form.editExamId ? "Modifier l'examen" : "Nouvel examen"} onClose={() => setModal(null)}
                     footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={() => setModal(null)}>Annuler</Btn><Btn loading={saving} onClick={async () => {
                       if (!form.examName) return;
-                      const entry = { id: form.editExamId || genId(), name: form.examName, classId: form.examClass || "", subject: form.examSubject, date: form.examDate || "", duration: Number(form.examDuration) || 120, room: form.examRoom || "" };
+                      const examSubj = form.examSubject === "Autre" && form.examSubjectCustom ? form.examSubjectCustom : (form.examSubject || SUBJECTS[0]);
+                      const entry = { id: form.editExamId || genId(), name: form.examName, classId: form.examClass || "", subject: examSubj, date: form.examDate || "", duration: Number(form.examDuration) || 120, room: form.examRoom || "" };
                       if (form.editExamId) await saveExams(exams.map(e => e.id === form.editExamId ? entry : e));
                       else await saveExams([...exams, entry]);
                       setModal(null);
@@ -2640,9 +2841,12 @@ export default function App() {
                         </select>
                       </div>
                       <div style={{ marginBottom: 16 }}><div style={S.label}>Matière</div>
-                        <select style={S.input} value={form.examSubject || SUBJECTS[0]} onChange={e => setForm({ ...form, examSubject: e.target.value })}>
+                        <select style={S.input} value={form.examSubject || SUBJECTS[0]} onChange={e => setForm({ ...form, examSubject: e.target.value, examSubjectCustom: "" })}>
                           {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
+                        {form.examSubject === "Autre" && (
+                          <input style={{ ...S.input, marginTop: 6 }} placeholder="Précisez la matière…" value={form.examSubjectCustom || ""} onChange={e => setForm({ ...form, examSubjectCustom: e.target.value })} />
+                        )}
                       </div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -2689,7 +2893,8 @@ export default function App() {
                   <Modal2 title="Nouvel incident" onClose={() => setModal(null)}
                     footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={() => setModal(null)}>Annuler</Btn><Btn loading={saving} onClick={async () => {
                       if (!form.discStudent) return;
-                      await saveIncidents([...incidents, { id: genId(), studentId: form.discStudent, type: form.discType, date: form.discDate, description: form.discDesc || "", sanction: form.discSanction || "" }]);
+                      const discType = form.discType === "Autre" && form.discTypeCustom ? form.discTypeCustom : (form.discType || INCIDENT_TYPES[0]);
+                      await saveIncidents([...incidents, { id: genId(), studentId: form.discStudent, type: discType, date: form.discDate, description: form.discDesc || "", sanction: form.discSanction || "" }]);
                       setModal(null);
                     }}>Enregistrer</Btn></div>}>
                     <div style={{ marginBottom: 16 }}><div style={S.label}>Élève</div>
@@ -2700,9 +2905,12 @@ export default function App() {
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <div style={{ marginBottom: 16 }}><div style={S.label}>Type d'incident</div>
-                        <select style={S.input} value={form.discType || INCIDENT_TYPES[0]} onChange={e => setForm({ ...form, discType: e.target.value })}>
+                        <select style={S.input} value={form.discType || INCIDENT_TYPES[0]} onChange={e => setForm({ ...form, discType: e.target.value, discTypeCustom: "" })}>
                           {INCIDENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
+                        {form.discType === "Autre" && (
+                          <input style={{ ...S.input, marginTop: 6 }} placeholder="Précisez le type d'incident…" value={form.discTypeCustom || ""} onChange={e => setForm({ ...form, discTypeCustom: e.target.value })} />
+                        )}
                       </div>
                       <Field label="Date" value={form.discDate || ""} onChange={v => setForm({ ...form, discDate: v })} type="date" />
                     </div>
@@ -2721,20 +2929,94 @@ export default function App() {
             {page === "docs" && (role === "admin" || role === "secretaire") && (
               <div>
                 <div style={{ marginBottom: 24 }}><h2>Documents & Certificats</h2></div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 20, marginBottom: 32 }}>
                   {[
                     { type: "scolarite", icon: "◈", label: "Certificat de scolarité", desc: "Atteste l'inscription de l'élève pour l'année en cours" },
                     { type: "conduite", icon: "◉", label: "Attestation de bonne conduite", desc: "Certifie le bon comportement de l'élève" },
                     { type: "inscription", icon: "◎", label: "Reçu d'inscription", desc: "Confirme l'inscription et le paiement des frais" },
+                    { type: "nonredevance", icon: "⊖", label: "Non-Redevance", desc: "Atteste qu'aucune somme n'est due à l'ancien établissement" },
+                    { type: "cantineRecu", icon: "⊙", label: "Reçu Cantine", desc: "Reçu de paiement de la cantine pour un élève" },
+                    { type: "librairie", icon: "⊚", label: "Reçu Bibliothèque", desc: "Reçu de frais de bibliothèque / prêt de livre" },
                   ].map(doc => (
                     <div key={doc.type} style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24 }}>
                       <div style={{ fontSize: 28, marginBottom: 12, opacity: 0.6 }}>{doc.icon}</div>
                       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{doc.label}</div>
                       <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>{doc.desc}</div>
-                      <Btn variant="ghost" onClick={() => { setForm({ docType: doc.type, docStudent: "", docLabel: doc.label }); setModal("genDoc"); }}>Générer</Btn>
+                      <Btn variant="ghost" onClick={() => { setForm({ docType: doc.type, docStudent: "", docLabel: doc.label, docMonth: new Date().toISOString().slice(0,7), docLoan: "" }); setModal("genDoc"); }}>Générer</Btn>
                     </div>
                   ))}
+                  <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24 }}>
+                    <div style={{ fontSize: 28, marginBottom: 12, opacity: 0.6 }}>⊗</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Palmarès de classe</div>
+                    <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>Classement des élèves par moyenne, par classe et trimestre</div>
+                    <Btn variant="ghost" onClick={() => { setForm({ palmClass: classes[0]?.id || "", palmTerm: TERMS[0] }); setModal("genPalm"); }}>Générer</Btn>
+                  </div>
                 </div>
+
+                {/* Multi-receipt section — multiple doc types for ONE student */}
+                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24, marginBottom: 24 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Multi-reçus</div>
+                  <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>Choisissez un élève, cochez les reçus à imprimer ensemble</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 16 }}>
+                    <div style={{ position: "relative" }}>
+                      <div style={{ fontSize: 12, color: "#636985", marginBottom: 4 }}>Élève</div>
+                      <input
+                        value={form.mrStuQ !== undefined ? form.mrStuQ : (students.find(s => s.id === form.mrStuId)?.name || "")}
+                        onChange={e => setForm({ ...form, mrStuQ: e.target.value, mrStuId: "" })}
+                        placeholder="Rechercher un élève..."
+                        style={{ background: "#1C1F2E", color: "#E8EAF0", border: "1px solid #2A2E42", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 220 }}
+                      />
+                      {form.mrStuQ && !form.mrStuId && (() => {
+                        const q = form.mrStuQ.toLowerCase();
+                        const matches = students.filter(s => s.name.toLowerCase().includes(q) || (s.grade||"").toLowerCase().includes(q)).slice(0, 8);
+                        if (!matches.length) return null;
+                        return (
+                          <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 99, background: "#1C1F2E", border: "1px solid #2A2E42", borderRadius: 6, width: 260, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px #0006" }}>
+                            {matches.map(s => (
+                              <div key={s.id} onClick={() => setForm({ ...form, mrStuId: s.id, mrStuQ: undefined })}
+                                style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, color: "#E8EAF0", borderBottom: "1px solid #2A2E42" }}
+                                onMouseEnter={e => e.currentTarget.style.background = "#2A2E42"}
+                                onMouseLeave={e => e.currentTarget.style.background = ""}
+                              >{s.name} <span style={{ color: "#636985" }}>— {s.grade}</span></div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: "#636985", marginBottom: 4 }}>Mois (Cantine)</div>
+                      <input value={form.mrMonth || ""} onChange={e => setForm({ ...form, mrMonth: e.target.value })} placeholder="ex: Avril 2025" style={{ background: "#1C1F2E", color: "#E8EAF0", border: "1px solid #2A2E42", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 140 }} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 16 }}>
+                    {[["mrInscription","Reçu d'inscription"],["mrNonRed","Non-Redevance"],["mrCantine","Reçu Cantine"],["mrBiblio","Reçu Bibliothèque"]].map(([key, label]) => (
+                      <label key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+                        <input type="checkbox" checked={!!form[key]} onChange={e => setForm({ ...form, [key]: e.target.checked })} />
+                        <span style={{ color: "#E8EAF0" }}>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <Btn onClick={() => {
+                    const stu = students.find(s => s.id === form.mrStuId);
+                    if (!stu) return;
+                    const date = new Date().toLocaleDateString("fr-FR");
+                    const year = `${new Date().getFullYear()-1}/${new Date().getFullYear()}`;
+                    const paid = studentPayments.filter(p => p.studentId === stu.id).reduce((a,p) => a + Number(p.amount||0), 0);
+                    const due = Number(classTuition[stu.grade] || 0);
+                    const pages = [];
+                    const hdr = `<h2 style="text-align:center;margin-bottom:4px">${school?.name||""}</h2>`;
+                    if (form.mrInscription) pages.push(`${hdr}<h3 style="text-align:center">Reçu d'inscription — ${year}</h3><p><strong>Élève :</strong> ${stu.name}<br><strong>Classe :</strong> ${stu.grade}<br><strong>Parent :</strong> ${stu.parent||"—"}<br><strong>Montant dû :</strong> ${fmtCFA(due)}<br><strong>Montant payé :</strong> ${fmtCFA(paid)}<br><strong>Reste :</strong> ${fmtCFA(Math.max(0,due-paid))}<br><strong>Date :</strong> ${date}</p><br><p>Signature et cachet</p>`);
+                    if (form.mrNonRed) pages.push(`${hdr}<h3 style="text-align:center">Certificat de Non-Redevance</h3><p>Nous soussignés, Direction de <strong>${school?.name||""}</strong>, certifions que l'élève <strong>${stu.name}</strong>, inscrit(e) en <strong>${stu.grade}</strong>, ne doit aucune somme à notre établissement et n'a aucune dette en cours à la date du <strong>${date}</strong>.<br><br>Ce document lui est délivré pour servir et valoir ce que de droit.</p><br><br><p>Fait le ${date}<br><br>Signature et cachet</p>`);
+                    if (form.mrCantine) pages.push(`${hdr}<h3 style="text-align:center">Reçu Cantine — ${form.mrMonth||"—"}</h3><p><strong>Élève :</strong> ${stu.name}<br><strong>Classe :</strong> ${stu.grade}<br><strong>Mois :</strong> ${form.mrMonth||"—"}<br><strong>Date :</strong> ${date}</p><br><p>Reçu pour paiement de la cantine scolaire.<br><br>Signature et cachet</p>`);
+                    if (form.mrBiblio) pages.push(`${hdr}<h3 style="text-align:center">Reçu Bibliothèque</h3><p><strong>Élève :</strong> ${stu.name}<br><strong>Classe :</strong> ${stu.grade}<br><strong>Date :</strong> ${date}</p><br><p>Reçu pour frais de bibliothèque.<br><br>Signature et cachet</p>`);
+                    if (pages.length === 0) return;
+                    const html = pages.map((p, i) => `<div style="page-break-after:${i < pages.length-1 ? "always" : "avoid"};font-family:serif;margin:60px;font-size:15px;line-height:1.8">${p}</div>`).join("");
+                    const win = window.open("","_blank");
+                    if (win) { win.document.write(`<html><head><title>Multi-reçus — ${stu.name}</title></head><body>${html}</body></html>`); win.document.close(); win.print(); }
+                  }}>⊕ Imprimer les reçus sélectionnés</Btn>
+                </div>
+
+                {/* genDoc modal */}
                 {modal === "genDoc" && (
                   <Modal2 title={`Générer — ${form.docLabel}`} onClose={() => setModal(null)}
                     footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={() => setModal(null)}>Annuler</Btn><Btn onClick={() => {
@@ -2745,7 +3027,17 @@ export default function App() {
                       let body = "";
                       if (form.docType === "scolarite") body = `Je soussigné(e), Directeur(trice) de ${school?.name}, certifie que l'élève ${stu.name} est régulièrement inscrit(e) dans notre établissement pour l'année scolaire ${year}, en classe de ${stu.grade || "—"}.\n\nFait à ${school?.city || "—"}, le ${date}.\n\nSignature et cachet de l'établissement`;
                       else if (form.docType === "conduite") body = `Je soussigné(e), Directeur(trice) de ${school?.name}, certifie que l'élève ${stu.name} a fait preuve d'une bonne conduite tout au long de son séjour dans notre établissement.\n\nFait à ${school?.city || "—"}, le ${date}.`;
-                      else body = `Reçu d'inscription pour l'élève ${stu.name}, classe de ${stu.grade || "—"}, pour l'année scolaire ${year}.\n\nÉtablissement : ${school?.name}\nDate : ${date}`;
+                      else if (form.docType === "inscription") body = `Reçu d'inscription pour l'élève ${stu.name}, classe de ${stu.grade || "—"}, pour l'année scolaire ${year}.\n\nÉtablissement : ${school?.name}\nDate : ${date}`;
+                      else if (form.docType === "nonredevance") body = `Je soussigné(e), Directeur(trice) de ${school?.name}, certifie que l'élève ${stu.name}, anciennement inscrit(e) à ${stu.prevSchool || "l'ancien établissement"}, n'est redevable d'aucune somme envers notre établissement et qu'il/elle peut être librement admis(e) dans un autre établissement.\n\nFait à ${school?.city || "—"}, le ${date}.\n\nSignature et cachet de l'établissement`;
+                      else if (form.docType === "cantineRecu") {
+                        const cantRec = cantine.filter(c => c.studentId === stu.id && c.month === (form.docMonth || "")).reduce((a,c) => ({ days: a.days + c.days, paid: a.paid + c.amountPaid }), { days: 0, paid: 0 });
+                        body = `REÇU DE CANTINE\n\nÉlève : ${stu.name}\nClasse : ${stu.grade || "—"}\nMois : ${form.docMonth || "—"}\nNombre de jours : ${cantRec.days}\nMontant payé : ${fmtCFA(cantRec.paid)}\n\nÉtablissement : ${school?.name}\nDate d'émission : ${date}\n\nSignature`;
+                      }
+                      else if (form.docType === "librairie") {
+                        const loan = loans.find(l => l.id === form.docLoan);
+                        const bk = books.find(b => b.id === loan?.bookId);
+                        body = `REÇU BIBLIOTHÈQUE\n\nÉlève : ${stu.name}\nLivre : ${bk?.title || "—"}\nAuteur : ${bk?.author || "—"}\nDate de prêt : ${loan?.date || "—"}\nRetour prévu : ${loan?.due || "—"}\n\nÉtablissement : ${school?.name}\nDate d'émission : ${date}\n\nSignature`;
+                      }
                       const win = window.open("", "_blank");
                       if (win) { win.document.write(`<html><head><title>${form.docLabel}</title><style>body{font-family:serif;margin:60px;font-size:16px;line-height:1.8}h2{text-align:center;margin-bottom:40px}h3{text-align:center}</style></head><body><h2>${school?.name}</h2><h3>${form.docLabel}</h3><p style="white-space:pre-line">${body}</p></body></html>`); win.document.close(); win.print(); }
                     }}>Imprimer</Btn></div>}>
@@ -2753,6 +3045,54 @@ export default function App() {
                       <select style={S.input} value={form.docStudent || ""} onChange={e => setForm({ ...form, docStudent: e.target.value })}>
                         <option value="">— Choisir un élève —</option>
                         {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+                    {form.docType === "cantineRecu" && (
+                      <div style={{ marginBottom: 16 }}><div style={S.label}>Mois</div>
+                        <input style={S.input} type="month" value={form.docMonth || ""} onChange={e => setForm({ ...form, docMonth: e.target.value })} />
+                      </div>
+                    )}
+                    {form.docType === "librairie" && form.docStudent && (
+                      <div style={{ marginBottom: 16 }}><div style={S.label}>Prêt de livre</div>
+                        <select style={S.input} value={form.docLoan || ""} onChange={e => setForm({ ...form, docLoan: e.target.value })}>
+                          <option value="">— Choisir un prêt —</option>
+                          {loans.filter(l => l.studentId === form.docStudent).map(l => {
+                            const bk = books.find(b => b.id === l.bookId);
+                            return <option key={l.id} value={l.id}>{bk?.title || "Livre"} — {l.date}</option>;
+                          })}
+                        </select>
+                      </div>
+                    )}
+                  </Modal2>
+                )}
+
+                {/* Palmarès modal */}
+                {modal === "genPalm" && (
+                  <Modal2 title="Palmarès de classe" onClose={() => setModal(null)}
+                    footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={() => setModal(null)}>Annuler</Btn><Btn onClick={() => {
+                      const cls = classes.find(c => c.id === form.palmClass);
+                      if (!cls) return;
+                      const term = form.palmTerm || TERMS[0];
+                      const classStudents = students.filter(s => s.classId === cls.id);
+                      const ranked = classStudents.map(s => {
+                        const sg = grades.filter(g => g.studentId === s.id && g.term === term);
+                        const avg = sg.length > 0 ? (sg.reduce((a, g) => a + (g.score / (g.maxScore || 20)) * 20, 0) / sg.length).toFixed(2) : "—";
+                        return { ...s, avg: sg.length > 0 ? Number(avg) : -1, avgStr: avg };
+                      }).sort((a, b) => b.avg - a.avg);
+                      const rows = ranked.map((s, i) => `<tr><td style="padding:8px 16px;border-bottom:1px solid #eee;text-align:center">${s.avg >= 0 ? i + 1 : "—"}</td><td style="padding:8px 16px;border-bottom:1px solid #eee">${s.name}</td><td style="padding:8px 16px;border-bottom:1px solid #eee;text-align:center;font-weight:600">${s.avgStr}</td></tr>`).join("");
+                      const date = new Date().toLocaleDateString("fr-FR");
+                      const win = window.open("","_blank");
+                      if (win) { win.document.write(`<html><head><title>Palmarès</title><style>body{font-family:serif;margin:40px}table{width:100%;border-collapse:collapse}th{background:#f0f0f0;padding:10px 16px;text-align:left}</style></head><body><h2 style="text-align:center">${school?.name}</h2><h3 style="text-align:center">Palmarès — ${cls.name} — ${term}</h3><p style="text-align:right;font-size:13px">Édité le ${date}</p><table><thead><tr><th style="text-align:center">Rang</th><th>Élève</th><th style="text-align:center">Moyenne /20</th></tr></thead><tbody>${rows}</tbody></table></body></html>`); win.document.close(); win.print(); }
+                    }}>Imprimer</Btn></div>}>
+                    <div style={{ marginBottom: 16 }}><div style={S.label}>Classe</div>
+                      <select style={S.input} value={form.palmClass || ""} onChange={e => setForm({ ...form, palmClass: e.target.value })}>
+                        <option value="">— Choisir —</option>
+                        {classes.map(c => <option key={c.id} value={c.id}>{c.name}{c.section ? ` (${c.section})` : ""}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: 16 }}><div style={S.label}>Trimestre</div>
+                      <select style={S.input} value={form.palmTerm || TERMS[0]} onChange={e => setForm({ ...form, palmTerm: e.target.value })}>
+                        {TERMS.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
                   </Modal2>
@@ -2924,11 +3264,11 @@ export default function App() {
               </div>
             )}
 
-            {/* Messagerie */}
+            {/* Annonces */}
             {page === "msg" && (
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-                  <h2>Messagerie</h2>
+                  <h2>Annonces</h2>
                   <Btn onClick={() => { setForm({ msgSubject: "", msgBody: "", msgTo: "all" }); setModal("composeMsg"); }}>+ Nouveau message</Btn>
                 </div>
                 <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
