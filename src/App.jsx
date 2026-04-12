@@ -70,6 +70,7 @@ const NAV_PAGES = [
   { k: "cant", l: "Cantine", icon: "⊙", roles: ["admin", "secretaire", "comptable"] },
   { k: "lib", l: "Bibliothèque", icon: "⊚", roles: ["admin", "secretaire"] },
   { k: "msg", l: "Annonces", icon: "⊛", roles: ["admin", "directeur", "secretaire", "enseignant", "comptable"] },
+  { k: "pay", l: "Paiements", icon: "💳", roles: ["admin", "comptable", "secretaire", "directeur"] },
   { k: "sub", l: "Abonnement", icon: "◈", roles: ["admin"] },
 ];
 
@@ -1483,7 +1484,7 @@ export default function App() {
           {dl <= 7 && dl > 0 && <div style={{ padding: "8px 16px", background: "rgba(253,203,110,0.12)", fontSize: 11, color: "#FDCB6E", textAlign: "center", borderBottom: "1px solid rgba(253,203,110,0.2)" }}>Expire dans {dl}j</div>}
           <nav style={{ flex: 1, padding: "16px 12px", overflow: "auto" }}>
             {visiblePages.map(p => (
-              <div key={p.k} style={S.navItem(page === p.k)} onClick={() => { setPage(p.k); setSearch(""); if (isMobile) closeSidebar(); }}>
+              <div key={p.k} style={S.navItem(page === p.k)} onClick={() => { if (p.k === "pay") { window.open("/admin-payments.html", "_blank"); return; } setPage(p.k); setSearch(""); if (isMobile) closeSidebar(); }}>
                 <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{p.icon}</span>
                 {p.l}
               </div>
