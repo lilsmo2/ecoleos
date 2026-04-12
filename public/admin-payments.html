@@ -245,7 +245,9 @@
     <p>Gestion des paiements de scolarité</p>
     <label>Code école</label>
     <input id="inp-code" type="text" placeholder="ex: ABC123">
-    <label>Mot de passe admin</label>
+    <label>Nom d'utilisateur</label>
+    <input id="inp-user" type="text" placeholder="ex: admin">
+    <label>Mot de passe</label>
     <input id="inp-pass" type="password" placeholder="••••••••">
     <button class="btn-primary" onclick="doLogin()">Se connecter</button>
     <div id="login-error"></div>
@@ -469,10 +471,16 @@ function scKey()   { return `eos3_school_${STATE.schoolId}`; }
 // ══════════════════════════════════════════════════════════════
 
 async function doLogin() {
-  const code = document.getElementById("inp-code").value.trim();
-  const pass = document.getElementById("inp-pass").value;
-  const errEl = document.getElementById("login-error");
+  const schoolCode = document.getElementById("inp-code").value.trim().toUpperCase();
+  const username   = document.getElementById("inp-user").value.trim();
+  const pass       = document.getElementById("inp-pass").value;
+  const errEl      = document.getElementById("login-error");
   errEl.textContent = "";
+
+  if (!schoolCode || !username || !pass) {
+    errEl.textContent = "Veuillez remplir tous les champs.";
+    return;
+  }
 
   // Try stored server URL from existing sessions
   const existingSess = lsGet(SESSION_KEY);
@@ -484,16 +492,20 @@ async function doLogin() {
       const res = await fetch(serverUrl.replace(/\/+$/, "") + "/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, password: pass }),
-        signal: AbortSignal.timeout(8000),
+        body: JSON.stringify({ schoolCode, username, password: pass }),
+        signal: AbortSignal.timeout(10000),
       });
       if (res.ok) {
         const json = await res.json();
+        // Server returns { token, refreshToken, user: { userId, schoolId, role, name } }
+        const user = json.user || {};
         const sess = {
           token: json.token,
           refreshToken: json.refreshToken,
-          schoolId: json.schoolId || json.school?._id || code,
-          schoolName: json.schoolName || json.school?.name || code,
+          schoolId: user.schoolId || json.schoolId,
+          schoolCode,
+          role: user.role || "admin",
+          userName: user.name || username,
           serverUrl,
         };
         lsSet(SESSION_KEY, sess);
@@ -504,14 +516,13 @@ async function doLogin() {
         errEl.textContent = err.error || "Identifiants incorrects.";
         return;
       }
-    } catch {
+    } catch (e) {
       // Server unreachable – try offline fallback
     }
   }
 
   // Offline fallback: use cached session for same school code
-  if (existingSess && existingSess.schoolId &&
-      (existingSess.schoolId === code || existingSess.schoolName?.toLowerCase() === code.toLowerCase())) {
+  if (existingSess && existingSess.schoolCode === schoolCode) {
     document.getElementById("offline-note").style.display = "block";
     await bootApp(existingSess);
     return;
@@ -520,8 +531,10 @@ async function doLogin() {
   errEl.textContent = "Impossible de se connecter. Vérifiez votre connexion ou le code école.";
 }
 
-document.getElementById("inp-pass").addEventListener("keydown", e => {
-  if (e.key === "Enter") doLogin();
+["inp-code","inp-user","inp-pass"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", e => {
+    if (e.key === "Enter") doLogin();
+  });
 });
 
 function doLogout() {
