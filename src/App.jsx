@@ -593,12 +593,14 @@ export default function App() {
   const finTotals = useMemo(() => {
     const now = new Date();
     const thisMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
-    const income = finances.filter(t => t.type === "income").reduce((a, t) => a + t.amount, 0);
-    const expense = finances.filter(t => t.type === "expense").reduce((a, t) => a + t.amount, 0);
-    const monthIncome = finances.filter(t => t.type === "income" && t.date?.startsWith(thisMonth)).reduce((a, t) => a + t.amount, 0);
-    const monthExpense = finances.filter(t => t.type === "expense" && t.date?.startsWith(thisMonth)).reduce((a, t) => a + t.amount, 0);
+    const payIncome = studentPayments.map(p => ({ type: "income", amount: Number(p.amount || 0), date: p.date }));
+    const allTxns = [...finances, ...payIncome];
+    const income = allTxns.filter(t => t.type === "income").reduce((a, t) => a + t.amount, 0);
+    const expense = allTxns.filter(t => t.type === "expense").reduce((a, t) => a + t.amount, 0);
+    const monthIncome = allTxns.filter(t => t.type === "income" && t.date?.startsWith(thisMonth)).reduce((a, t) => a + t.amount, 0);
+    const monthExpense = allTxns.filter(t => t.type === "expense" && t.date?.startsWith(thisMonth)).reduce((a, t) => a + t.amount, 0);
     return { income, expense, balance: income - expense, monthIncome, monthExpense, monthBalance: monthIncome - monthExpense };
-  }, [finances]);
+  }, [finances, studentPayments]);
 
   const budgetData = useMemo(() => {
     const yearBudgets = budgets.filter(b => b.year === budgetYear);
@@ -606,15 +608,18 @@ export default function App() {
     const plannedExpense = yearBudgets.filter(b => b.type === "expense").reduce((a, b) => a + b.planned, 0);
     const yearPrefix = String(budgetYear);
     const yearFinances = finances.filter(t => t.date?.startsWith(yearPrefix));
-    const actualIncome = yearFinances.filter(t => t.type === "income").reduce((a, t) => a + t.amount, 0);
-    const actualExpense = yearFinances.filter(t => t.type === "expense").reduce((a, t) => a + t.amount, 0);
+    // Merge tuition payments as income so budget reflects all collected fees
+    const yearPayRows = studentPayments.filter(p => p.date?.startsWith(yearPrefix)).map(p => ({ type: "income", category: "Frais de scolarite", amount: Number(p.amount || 0), date: p.date }));
+    const allActual = [...yearFinances, ...yearPayRows];
+    const actualIncome = allActual.filter(t => t.type === "income").reduce((a, t) => a + t.amount, 0);
+    const actualExpense = allActual.filter(t => t.type === "expense").reduce((a, t) => a + t.amount, 0);
 
     // Per-category budget vs actual
     const allCats = [...BUDGET_CATEGORIES.income, ...BUDGET_CATEGORIES.expense];
     const byCat = allCats.map(cat => {
       const type = BUDGET_CATEGORIES.income.includes(cat) ? "income" : "expense";
       const planned = yearBudgets.filter(b => b.category === cat).reduce((a, b) => a + b.planned, 0);
-      const actual = yearFinances.filter(t => t.category === cat).reduce((a, t) => a + t.amount, 0);
+      const actual = allActual.filter(t => t.category === cat).reduce((a, t) => a + t.amount, 0);
       const diff = actual - planned;
       return { cat, type, planned, actual, diff, overBudget: type === "expense" ? diff > 0 && planned > 0 : false };
     }).filter(c => c.planned > 0 || c.actual > 0);
@@ -626,13 +631,13 @@ export default function App() {
       const prefix = budgetYear + "-" + String(i + 1).padStart(2, "0");
       const mPlannedInc = yearBudgets.filter(b => b.month === prefix && b.type === "income").reduce((a, b) => a + b.planned, 0);
       const mPlannedExp = yearBudgets.filter(b => b.month === prefix && b.type === "expense").reduce((a, b) => a + b.planned, 0);
-      const mActualInc = yearFinances.filter(t => t.type === "income" && t.date?.startsWith(prefix)).reduce((a, t) => a + t.amount, 0);
-      const mActualExp = yearFinances.filter(t => t.type === "expense" && t.date?.startsWith(prefix)).reduce((a, t) => a + t.amount, 0);
+      const mActualInc = allActual.filter(t => t.type === "income" && t.date?.startsWith(prefix)).reduce((a, t) => a + t.amount, 0);
+      const mActualExp = allActual.filter(t => t.type === "expense" && t.date?.startsWith(prefix)).reduce((a, t) => a + t.amount, 0);
       return { month: m, prefix, plannedInc: mPlannedInc, plannedExp: mPlannedExp, actualInc: mActualInc, actualExp: mActualExp };
     });
 
     return { plannedIncome, plannedExpense, plannedBalance: plannedIncome - plannedExpense, actualIncome, actualExpense, byCat, overBudgetItems, byMonth };
-  }, [budgets, finances, budgetYear]);
+  }, [budgets, finances, studentPayments, budgetYear]);
 
   const filteredBudgets = useMemo(() => {
     const yearBuds = budgets.filter(b => b.year === budgetYear);
