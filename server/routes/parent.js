@@ -29,6 +29,8 @@ function parentGuard(req, res, next) {
 }
 
 // POST /api/parent/login — Parent login
+// Authenticates by phone + accessCode + schoolCode.
+// Returns all children linked to this phone number at that school.
 router.post("/login", async (req, res) => {
   try {
     const { phone, accessCode, schoolCode } = req.body;
@@ -41,6 +43,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Code établissement introuvable" });
     }
 
+    // Verify the access code belongs to this phone at this school
     const parentAccess = await ParentAccess.findOne({
       schoolId: school._id,
       parentPhone: phone,
@@ -52,15 +55,35 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Téléphone ou code d'accès incorrect" });
     }
 
-    const student = await Student.findById(parentAccess.studentId);
-    if (!student) {
-      return res.status(404).json({ error: "Élève introuvable" });
+    // Find ALL children linked to this phone number at this school
+    const allAccess = await ParentAccess.find({
+      schoolId: school._id,
+      parentPhone: phone,
+      status: "actif",
+    });
+
+    const children = [];
+    for (const access of allAccess) {
+      const student = await Student.findById(access.studentId).lean();
+      if (student) {
+        children.push({
+          studentId: String(student._id),
+          name: student.name,
+          grade: student.grade || student.classe || "",
+          photo: student.photo || null,
+          accessId: String(access._id),
+        });
+      }
     }
 
+    // Default active child is the one matching the access code used
+    const activeStudentId = String(parentAccess.studentId);
+
     const payload = {
-      userId: parentAccess._id,
-      schoolId: school._id,
-      studentId: parentAccess.studentId,
+      userId: String(parentAccess._id),
+      schoolId: String(school._id),
+      studentId: activeStudentId,      // currently active child
+      parentPhone: phone,               // stored so we can switch children
       role: "parent",
       name: parentAccess.parentName,
     };
@@ -69,14 +92,81 @@ router.post("/login", async (req, res) => {
     res.json({
       ...tokens,
       user: payload,
-      studentName: student.name,
+      children,                          // full list of all children
+      activeStudentId,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/parent/child — Get child info
+// POST /api/parent/switch-child — Switch active child (re-issues tokens)
+router.post("/switch-child", authenticate, parentGuard, async (req, res) => {
+  try {
+    const { studentId } = req.body;
+    if (!studentId) return res.status(400).json({ error: "studentId requis" });
+
+    // Verify this student is actually linked to the parent's phone
+    const access = await ParentAccess.findOne({
+      schoolId: req.user.schoolId,
+      parentPhone: req.user.parentPhone,
+      studentId,
+      status: "actif",
+    });
+
+    if (!access) {
+      return res.status(403).json({ error: "Enfant introuvable pour ce parent" });
+    }
+
+    const student = await Student.findById(studentId).lean();
+    if (!student) return res.status(404).json({ error: "Élève introuvable" });
+
+    // Issue new tokens with the switched child
+    const payload = {
+      userId: String(access._id),
+      schoolId: req.user.schoolId,
+      studentId: String(studentId),
+      parentPhone: req.user.parentPhone,
+      role: "parent",
+      name: req.user.name,
+    };
+
+    const tokens = signTokens(payload);
+    res.json({ ...tokens, user: payload, studentName: student.name });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/parent/children — List all children for this parent
+router.get("/children", authenticate, parentGuard, async (req, res) => {
+  try {
+    const allAccess = await ParentAccess.find({
+      schoolId: req.user.schoolId,
+      parentPhone: req.user.parentPhone,
+      status: "actif",
+    });
+
+    const children = [];
+    for (const access of allAccess) {
+      const student = await Student.findById(access.studentId).lean();
+      if (student) {
+        children.push({
+          studentId: String(student._id),
+          name: student.name,
+          grade: student.grade || student.classe || "",
+          photo: student.photo || null,
+          isActive: String(student._id) === String(req.user.studentId),
+        });
+      }
+    }
+    res.json(children);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/parent/child — Get current active child info
 router.get("/child", authenticate, parentGuard, async (req, res) => {
   try {
     const student = await Student.findById(req.user.studentId);
@@ -89,7 +179,7 @@ router.get("/child", authenticate, parentGuard, async (req, res) => {
   }
 });
 
-// GET /api/parent/grades — Get child's grades
+// GET /api/parent/grades — Get active child's grades
 router.get("/grades", authenticate, parentGuard, async (req, res) => {
   try {
     const grades = await Grade.find({
@@ -103,7 +193,7 @@ router.get("/grades", authenticate, parentGuard, async (req, res) => {
   }
 });
 
-// GET /api/parent/attendance — Get child's attendance
+// GET /api/parent/attendance — Get active child's attendance
 router.get("/attendance", authenticate, parentGuard, async (req, res) => {
   try {
     const attendance = await Attendance.find({
@@ -117,11 +207,12 @@ router.get("/attendance", authenticate, parentGuard, async (req, res) => {
   }
 });
 
-// GET /api/parent/finances — Get child's financial records
+// GET /api/parent/finances — Get active child's financial records
 router.get("/finances", authenticate, parentGuard, async (req, res) => {
   try {
     const finances = await Finance.find({
       schoolId: req.user.schoolId,
+      studentId: req.user.studentId,
       deletedAt: null,
     });
     res.json(finances);
@@ -130,7 +221,7 @@ router.get("/finances", authenticate, parentGuard, async (req, res) => {
   }
 });
 
-// GET /api/parent/discipline — Get child's discipline records
+// GET /api/parent/discipline — Get active child's discipline records
 router.get("/discipline", authenticate, parentGuard, async (req, res) => {
   try {
     const discipline = await Discipline.find({
@@ -144,7 +235,7 @@ router.get("/discipline", authenticate, parentGuard, async (req, res) => {
   }
 });
 
-// GET /api/parent/timetable — Get timetable for the child's class
+// GET /api/parent/timetable — Get timetable for active child's class
 router.get("/timetable", authenticate, parentGuard, async (req, res) => {
   try {
     const student = await Student.findById(req.user.studentId);
