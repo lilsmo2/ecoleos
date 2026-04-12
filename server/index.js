@@ -6,18 +6,13 @@ import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import schoolRoutes from "./routes/schools.js";
 import syncRoutes from "./routes/sync.js";
-import parentRoutes from "./routes/parent.js";
 import { createCrudRouter } from "./routes/crud.js";
 
 import Student from "./models/Student.js";
 import Staff from "./models/Staff.js";
 import Finance from "./models/Finance.js";
 import Budget from "./models/Budget.js";
-import Attendance from "./models/Attendance.js";
-import Grade from "./models/Grade.js";
-import Discipline from "./models/Discipline.js";
-import Timetable from "./models/Timetable.js";
-import Announcement from "./models/Announcement.js";
+import TuitionPayment from "./models/TuitionPayment.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -35,7 +30,6 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/schools", schoolRoutes);
 app.use("/api/sync", syncRoutes);
-app.use("/api/parent", parentRoutes);
 
 // Per-school CRUD routes
 app.use("/api/schools/:schoolId/students", createCrudRouter(Student, {
@@ -62,34 +56,10 @@ app.use("/api/schools/:schoolId/budgets", createCrudRouter(Budget, {
   deleteRoles: ["admin"],
 }));
 
-app.use("/api/schools/:schoolId/attendance", createCrudRouter(Attendance, {
-  readRoles: ["admin", "directeur", "secretaire", "enseignant"],
-  writeRoles: ["admin", "directeur", "enseignant"],
-  deleteRoles: ["admin"],
-}));
-
-app.use("/api/schools/:schoolId/grades", createCrudRouter(Grade, {
-  readRoles: ["admin", "directeur", "enseignant"],
-  writeRoles: ["admin", "enseignant"],
-  deleteRoles: ["admin"],
-}));
-
-app.use("/api/schools/:schoolId/discipline", createCrudRouter(Discipline, {
-  readRoles: ["admin", "directeur", "secretaire"],
-  writeRoles: ["admin", "directeur"],
-  deleteRoles: ["admin"],
-}));
-
-app.use("/api/schools/:schoolId/timetable", createCrudRouter(Timetable, {
-  readRoles: ["admin", "directeur", "secretaire", "enseignant"],
-  writeRoles: ["admin", "directeur"],
-  deleteRoles: ["admin"],
-}));
-
-app.use("/api/schools/:schoolId/announcements", createCrudRouter(Announcement, {
-  readRoles: ["admin", "directeur", "secretaire", "enseignant"],
-  writeRoles: ["admin", "directeur", "secretaire"],
-  deleteRoles: ["admin"],
+app.use("/api/schools/:schoolId/tuition-payments", createCrudRouter(TuitionPayment, {
+  readRoles: ["admin", "comptable", "secretaire", "directeur"],
+  writeRoles: ["admin", "comptable", "secretaire"],
+  deleteRoles: ["admin", "comptable"],
 }));
 
 // Start
