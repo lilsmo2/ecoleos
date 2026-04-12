@@ -178,15 +178,39 @@ const SearchBar = ({ value, onChange, placeholder }) => (
 const _injectStyles = typeof document !== "undefined" && (() => {
   const el = document.createElement("style");
   el.textContent = `
+    html, body, #root {
+      background: #0F1117 \!important;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 1024px) {
+      .eos-card-grid { grid-template-columns: repeat(2, 1fr) \!important; }
+      .eos-stat-grid { grid-template-columns: repeat(2, 1fr) \!important; }
+      body { overflow-x: hidden \!important; }
+    }
     @media (max-width: 768px) {
-      .eos-sidebar { transform: translateX(-260px) !important; }
-      .eos-sidebar.open { transform: translateX(0) !important; }
-      .eos-main { margin-left: 0 !important; }
-      .eos-topbar { padding: 0 16px !important; }
-      .eos-content { padding: 16px !important; }
-      .eos-super-grid { grid-template-columns: 1fr !important; }
-      .eos-plan-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .eos-sidebar { transform: translateX(-260px) \!important; }
+      .eos-sidebar.open { transform: translateX(0) \!important; }
+      .eos-main { margin-left: 0 \!important; }
+      .eos-topbar { padding: 0 16px \!important; }
+      .eos-content { padding: 16px \!important; overflow-x: hidden \!important; }
+      .eos-super-grid { grid-template-columns: 1fr \!important; }
+      .eos-plan-grid { grid-template-columns: 1fr \!important; }
+      .eos-card-grid { grid-template-columns: 1fr \!important; }
+      .eos-stat-grid { grid-template-columns: 1fr \!important; }
+      .eos-table { display: block \!important; overflow-x: auto \!important; }
+      .eos-table table { width: 100% \!important; }
+      .eos-modal-card { width: 95% \!important; max-height: 90vh \!important; }
+      body { overflow-x: hidden \!important; }
+      * { max-width: 100% \!important; }
+    }
+    @media (max-width: 480px) {
+      .eos-topbar { padding: 0 12px \!important; height: 56px \!important; }
+      .eos-content { padding: 12px \!important; }
+      .eos-plan-grid { grid-template-columns: 1fr \!important; }
+      .eos-card { padding: 16px \!important; width: 100% \!important; max-width: 100% \!important; }
+      input, button, select, textarea { font-size: 16px \!important; }
+      .eos-modal-card { padding: 20px 16px \!important; }
+      body { overflow-x: hidden \!important; }
     }
   `;
   document.head.appendChild(el);
@@ -243,6 +267,7 @@ export default function App() {
   const [payroll, setPayroll] = useState([]);
   const [studentPayments, setStudentPayments] = useState([]);
   const [classTuition, setClassTuition] = useState({}); // { [grade]: amountDue }
+  const [parentCodes, setParentCodes] = useState([]);
 
   // super admin finances
   const [superPayments, setSuperPayments] = useState([]);
@@ -298,6 +323,39 @@ export default function App() {
       }
       const sp = await db.get("eos3_super_payments");
       if (sp) setSuperPayments(sp);
+
+      // 3. Try to restore session from localStorage
+      const saved_session = localStorage.getItem("eos3_session");
+      if (saved_session) {
+        try {
+          const session = JSON.parse(saved_session);
+          if (session.user && session.step === "app") {
+            // Session found, restore it
+            setUser(session.user);
+            if (session.schoolId) {
+              const school_to_restore = saved.find(s => s.id === session.schoolId);
+              if (school_to_restore) {
+                setSchool(school_to_restore);
+                await loadSchool(session.schoolId);
+                setStep("app");
+                setPage("dash");
+                setLoading(false);
+                return;
+              }
+            }
+          } else if (session.user && session.step === "super") {
+            // Super admin session found
+            setUser(session.user);
+            setStep("super");
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          // Invalid session data, ignore and proceed to login
+          localStorage.removeItem("eos3_session");
+        }
+      }
+
       setLoading(false);
     })();
   }, []);
@@ -386,6 +444,7 @@ export default function App() {
   const savePayroll = useCallback(async (list) => { setSaving(true); setPayroll(list); await db.set("eos3_prl_" + sk, list); setSaving(false); }, [sk]);
   const saveStudentPayments = useCallback(async (list) => { setSaving(true); setStudentPayments(list); await db.set("eos3_stup_" + sk, list); setSaving(false); }, [sk]);
   const saveClassTuition = useCallback(async (obj) => { setSaving(true); setClassTuition(obj); await db.set("eos3_tuition_" + sk, obj); setSaving(false); }, [sk]);
+  const saveParentCodes = useCallback(async (list) => { setSaving(true); setParentCodes(list); await db.set("eos3_par_" + sk, list); setSaving(false); }, [sk]);
 
   const saveSuperPayments = useCallback(async (list) => {
     setSaving(true);
@@ -417,6 +476,7 @@ export default function App() {
     const prl = await db.get("eos3_prl_" + id); setPayroll(prl || []);
     const stup = await db.get("eos3_stup_" + id); setStudentPayments(stup || []);
     const tuit = await db.get("eos3_tuition_" + id); setClassTuition(tuit || {});
+    const par = await db.get("eos3_par_" + id); setParentCodes(par || []);
     setLoading(false);
   }, []);
 
@@ -447,6 +507,7 @@ export default function App() {
         setUser({ name: "Administrateur", role: "admin" });
         if (expired) { setStep("blocked"); setLoading(false); return; }
         await loadSchool(sc.id);
+        localStorage.setItem("eos3_session", JSON.stringify({ user: { name: "Administrateur", role: "admin" }, schoolId: sc.id, step: "app" }));
         setStep("app"); setPage("dash"); setLoading(false); return;
       }
     }
@@ -465,6 +526,7 @@ export default function App() {
         setUser({ name: m.name, role: m.role });
         if (expired) { setStep("blocked"); setLoading(false); return; }
         await loadSchool(sc.id);
+        localStorage.setItem("eos3_session", JSON.stringify({ user: { name: m.name, role: m.role }, schoolId: sc.id, step: "app" }));
         setStep("app"); setPage("dash"); setLoading(false); return;
       }
     }
@@ -478,12 +540,13 @@ export default function App() {
     const stored = await db.get("eos3_super_hash");
     if (stored) {
       const ok = await verifyPassword(sp, stored);
-      if (su === "superadmin" && ok) { setStep("super"); setLoading(false); return; }
+      if (su === "superadmin" && ok) { localStorage.setItem("eos3_session", JSON.stringify({ user: { name: "Super Admin", role: "super" }, schoolId: null, step: "super" })); setStep("super"); setLoading(false); return; }
     } else {
       // First time: accept default and store hash
       if (su === "superadmin" && sp === "super2025") {
         const h = await hashPassword("super2025");
         await db.set("eos3_super_hash", h);
+        localStorage.setItem("eos3_session", JSON.stringify({ user: { name: "Super Admin", role: "super" }, schoolId: null, step: "super" }));
         setStep("super"); setLoading(false); return;
       }
     }
@@ -492,6 +555,7 @@ export default function App() {
   }, [su, sp]);
 
   const logout = useCallback(() => {
+    localStorage.removeItem("eos3_session");
     setStep("login"); setSchool(null); setUser(null); setErr(""); setCode(""); setUid(""); setPwd(""); setSearch("");
     setSu(""); setSp(""); setSuperMode(false); setSuperErr("");
   }, []);
@@ -1273,6 +1337,26 @@ export default function App() {
     await saveStu(students.map(s => s.id === id ? { ...s, status: s.status === "actif" ? "inactif" : "actif" } : s));
   };
 
+  const generateParentCode = async (studentId, studentName, parentName, parentPhone) => {
+    const code = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit
+    const id = "par_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    const record = {
+      id,
+      schoolId: school.id,
+      studentId,
+      studentName,
+      parentName: parentName || "Parent",
+      parentPhone: parentPhone || "",
+      accessCode: code,
+      status: "actif",
+      createdAt: new Date().toISOString()
+    };
+    const existing = [...parentCodes];
+    existing.push(record);
+    await saveParentCodes(existing);
+    return record;
+  };
+
   // ── Staff CRUD ──
   const addStaffMember = async () => {
     if (!form.name || !form.username || !form.password) return;
@@ -1450,78 +1534,418 @@ export default function App() {
           <div className="eos-content" style={S.content}>
 
             {/* Dashboard */}
-            {page === "dash" && (
-              <div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
-                  <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{students.length} total</div></div>
-                  <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{staff.length} total</div></div>
-                  <div style={S.stat}><div style={S.label}>Forfait</div><div style={{ fontSize: 20, fontWeight: 700, marginTop: 8, color: "#A29BFE" }}>{PLANS[school?.plan]?.name || "—"}</div></div>
-                  <div style={S.stat}><div style={S.label}>Jours restants</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: dl <= 7 ? "#FDCB6E" : "#00B894" }}>{dl}</div></div>
-                </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
-                  <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Répartition par Niveau</h3></div>
-                  <div style={{ padding: 20 }}>
-                    {NIV.map(n => {
-                      const c = students.filter(s => s.grade === n && s.status === "actif").length;
-                      const max = Math.max(...NIV.map(nn => students.filter(s => s.grade === nn && s.status === "actif").length), 1);
-                      return (
-                        <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                          <span style={{ width: 90, fontSize: 13, color: "#9BA1B7" }}>{n}</span>
-                          <div style={{ flex: 1, height: 24, background: "#1C1F2E", borderRadius: 4, overflow: "hidden" }}>
-                            <div style={{ width: `${(c / max) * 100}%`, height: "100%", background: "linear-gradient(90deg,#6C5CE7,#A29BFE)", borderRadius: 4, transition: "width 0.3s ease" }} />
+                        {page === "dash" && (() => {
+              // ══════════════════════════════════════════════════════════════
+              // ADMIN DASHBOARD — Comprehensive overview
+              // ══════════════════════════════════════════════════════════════
+              if (role === "admin") {
+                return (
+                  <div>
+                    {/* Stats Grid */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
+                      <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{students.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{staff.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Forfait</div><div style={{ fontSize: 20, fontWeight: 700, marginTop: 8, color: "#A29BFE" }}>{PLANS[school?.plan]?.name || "—"}</div></div>
+                      <div style={S.stat}><div style={S.label}>Jours restants</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: dl <= 7 ? "#FDCB6E" : "#00B894" }}>{dl}</div></div>
+                    </div>
+
+                    {/* Grade Distribution Chart */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Répartition par Niveau</h3></div>
+                      <div style={{ padding: 20 }}>
+                        {NIV.map(n => {
+                          const c = students.filter(s => s.grade === n && s.status === "actif").length;
+                          const max = Math.max(...NIV.map(nn => students.filter(s => s.grade === nn && s.status === "actif").length), 1);
+                          return (
+                            <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                              <span style={{ width: 90, fontSize: 13, color: "#9BA1B7" }}>{n}</span>
+                              <div style={{ flex: 1, height: 24, background: "#1C1F2E", borderRadius: 4, overflow: "hidden" }}>
+                                <div style={{ width: `${(c / max) * 100}%`, height: "100%", background: "linear-gradient(90deg,#6C5CE7,#A29BFE)", borderRadius: 4, transition: "width 0.3s ease" }} />
+                              </div>
+                              <span style={{ width: 28, fontSize: 13, fontWeight: 600, textAlign: "right" }}>{c}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Data Management */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                        <h3>Données de l'établissement</h3>
+                      </div>
+                      <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                        <Btn variant="ghost" onClick={exportSchoolData}>↓ Exporter les données</Btn>
+                        <label>
+                          <input type="file" accept=".json" onChange={handleImportFile} style={{ display: "none" }} />
+                          <span style={{ ...S.btn, ...S.ghost, display: "inline-block", cursor: "pointer" }}>↑ Importer des données</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Budget Summary */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20, cursor: "pointer" }} onClick={() => { setPage("budget"); setSearch(""); }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <h3>Budget {new Date().getFullYear()}</h3>
+                        <span style={{ fontSize: 12, color: "#636985" }}>Voir détails →</span>
+                      </div>
+                      <div style={{ padding: 20, display: "flex", gap: 20, flexWrap: "wrap" }}>
+                        <div>
+                          <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5 }}>Dépenses réelles / prévues</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4, color: budgetData.actualExpense <= budgetData.plannedExpense || budgetData.plannedExpense === 0 ? "#00B894" : "#FF6B6B" }}>
+                            {budgetData.plannedExpense > 0 ? Math.round((budgetData.actualExpense / budgetData.plannedExpense) * 100) + "%" : "—"}
                           </div>
-                          <span style={{ width: 28, fontSize: 13, fontWeight: 600, textAlign: "right" }}>{c}</span>
                         </div>
-                      );
-                    })}
+                        <div>
+                          <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5 }}>Catégories en dépassement</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4, color: budgetData.overBudgetItems.length > 0 ? "#FF6B6B" : "#00B894" }}>
+                            {budgetData.overBudgetItems.length}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5 }}>Statut</div>
+                          <div style={{ marginTop: 6 }}>
+                            <span style={S.badge(budgetData.overBudgetItems.length > 0 ? "red" : "green")}>
+                              {budgetData.overBudgetItems.length > 0 ? "Dépassement" : budgetData.plannedExpense > 0 ? "En bonne voie" : "Non défini"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Links */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                        <h3>Accès rapide</h3>
+                      </div>
+                      <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                        <Btn onClick={() => { setPage("stu"); setSearch(""); }}>◎ Élèves</Btn>
+                        <Btn onClick={() => { setPage("staff"); setSearch(""); }}>◉ Personnel</Btn>
+                        <Btn onClick={() => { setPage("fin"); setSearch(""); }}>◆ Finances</Btn>
+                        <Btn onClick={() => { setPage("budget"); setSearch(""); }}>◇ Budget</Btn>
+                        <Btn onClick={() => { setPage("cls"); setSearch(""); }}>⊞ Classes</Btn>
+                        <Btn onClick={() => { setPage("att"); setSearch(""); }}>✓ Présences</Btn>
+                        <Btn onClick={() => { setPage("grades"); setSearch(""); }}>✎ Notes</Btn>
+                        <Btn onClick={() => { setPage("disc"); setSearch(""); }}>⊘ Discipline</Btn>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // ══════════════════════════════════════════════════════════════
+              // DIRECTEUR (DIRECTOR) DASHBOARD
+              // ══════════════════════════════════════════════════════════════
+              if (role === "directeur") {
+                const todayIncidents = incidents.filter(inc => inc.date === new Date().toISOString().slice(0, 10)).slice(0, 5);
+                const presentToday = attendance.filter(a => a.date === new Date().toISOString().slice(0, 10) && a.status === "présent").length;
+                const absentToday = attendance.filter(a => a.date === new Date().toISOString().slice(0, 10) && a.status === "absent").length;
+                
+                return (
+                  <div>
+                    {/* Stats */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
+                      <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{students.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{staff.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Présents aujourd'hui</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{presentToday}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{absentToday} absents</div></div>
+                    </div>
+
+                    {/* Grade Distribution */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Répartition par Niveau</h3></div>
+                      <div style={{ padding: 20 }}>
+                        {NIV.map(n => {
+                          const c = students.filter(s => s.grade === n && s.status === "actif").length;
+                          const max = Math.max(...NIV.map(nn => students.filter(s => s.grade === nn && s.status === "actif").length), 1);
+                          return (
+                            <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                              <span style={{ width: 90, fontSize: 13, color: "#9BA1B7" }}>{n}</span>
+                              <div style={{ flex: 1, height: 24, background: "#1C1F2E", borderRadius: 4, overflow: "hidden" }}>
+                                <div style={{ width: `${(c / max) * 100}%`, height: "100%", background: "linear-gradient(90deg,#6C5CE7,#A29BFE)", borderRadius: 4, transition: "width 0.3s ease" }} />
+                              </div>
+                              <span style={{ width: 28, fontSize: 13, fontWeight: 600, textAlign: "right" }}>{c}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Recent Discipline Incidents */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <h3>Incidents récents</h3>
+                        <span style={{ fontSize: 12, color: "#636985" }}>Aujourd'hui: {todayIncidents.length}</span>
+                      </div>
+                      <div style={{ padding: 20 }}>
+                        {todayIncidents.length === 0 ? (
+                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucun incident aujourd'hui</div>
+                        ) : (
+                          todayIncidents.map(inc => {
+                            const student = students.find(s => s.id === inc.studentId);
+                            return (
+                              <div key={inc.id} style={{ padding: "12px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div>
+                                  <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>{student?.name || "Élève"}</div>
+                                  <div style={{ fontSize: 11, color: "#636985", marginTop: 2 }}>{inc.type}</div>
+                                </div>
+                                <span style={S.badge("red")}>{inc.sanction || "—"}</span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Links */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                        <h3>Accès rapide</h3>
+                      </div>
+                      <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                        <Btn onClick={() => { setPage("cls"); setSearch(""); }}>⊞ Classes</Btn>
+                        <Btn onClick={() => { setPage("att"); setSearch(""); }}>✓ Présences</Btn>
+                        <Btn onClick={() => { setPage("grades"); setSearch(""); }}>✎ Notes</Btn>
+                        <Btn onClick={() => { setPage("disc"); setSearch(""); }}>⊘ Discipline</Btn>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // ══════════════════════════════════════════════════════════════
+              // SECRÉTAIRE (SECRETARY) DASHBOARD
+              // ══════════════════════════════════════════════════════════════
+              if (role === "secretaire") {
+                const thisMonth = new Date().getFullYear() + "-" + String(new Date().getMonth() + 1).padStart(2, "0");
+                const newEnrollmentsThisMonth = students.filter(s => s.enrollYear && s.enrollYear.startsWith(thisMonth.split("-")[0]) && s.id).length;
+                
+                return (
+                  <div>
+                    {/* Stats */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
+                      <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{newEnrollmentsThisMonth} inscriptions cette année</div></div>
+                      <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{staff.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Classes</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{classes.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{students.filter(s => s.status === "actif").length} élèves</div></div>
+                    </div>
+
+                    {/* Classes Overview */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Aperçu des Classes</h3></div>
+                      <div style={{ padding: 20 }}>
+                        {classes.length === 0 ? (
+                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucune classe créée</div>
+                        ) : (
+                          classes.slice(0, 8).map(c => {
+                            const studentCount = students.filter(s => s.classId === c.id && s.status === "actif").length;
+                            return (
+                              <div key={c.id} style={{ padding: "10px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>
+                                  {c.name}
+                                  {c.section && <span style={{ fontSize: 11, color: "#636985", marginLeft: 8 }}>({c.section})</span>}
+                                </div>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: "#A29BFE" }}>{studentCount} élèves</span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Links */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                        <h3>Accès rapide</h3>
+                      </div>
+                      <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                        <Btn onClick={() => { setPage("stu"); setSearch(""); }}>◎ Élèves</Btn>
+                        <Btn onClick={() => { setPage("staff"); setSearch(""); }}>◉ Personnel</Btn>
+                        <Btn onClick={() => { setPage("cls"); setSearch(""); }}>⊞ Classes</Btn>
+                        <Btn onClick={() => { setPage("docs"); setSearch(""); }}>⊕ Documents</Btn>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // ══════════════════════════════════════════════════════════════
+              // ENSEIGNANT / TITULAIRE (TEACHER) DASHBOARD
+              // ══════════════════════════════════════════════════════════════
+              if (role === "enseignant" || role === "titulaire") {
+                const today = new Date().toISOString().slice(0, 10);
+                const todayAttendance = attendance.filter(a => a.date === today).slice(0, 10);
+                const recentGrades = grades.filter(g => g.studentId).slice(-5);
+                const userClasses = timetable.filter(t => t.teacherId === user?.id).map(t => t.classId).filter((v, i, a) => a.indexOf(v) === i);
+                
+                return (
+                  <div>
+                    {/* Stats */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
+                      <div style={S.stat}><div style={S.label}>Mes Classes</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{userClasses.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>Emploi du temps</div></div>
+                      <div style={S.stat}><div style={S.label}>Présences aujourd'hui</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{todayAttendance.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>Élèves marqués</div></div>
+                      <div style={S.stat}><div style={S.label}>Notes entrées</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{recentGrades.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>Récemment</div></div>
+                    </div>
+
+                    {/* My Classes */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Mes Classes</h3></div>
+                      <div style={{ padding: 20 }}>
+                        {userClasses.length === 0 ? (
+                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucune classe assignée</div>
+                        ) : (
+                          userClasses.map(classId => {
+                            const cls = classes.find(c => c.id === classId);
+                            const studentCount = students.filter(s => s.classId === classId && s.status === "actif").length;
+                            return (
+                              <div key={classId} style={{ padding: "10px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>
+                                  {cls?.name || "Classe"}
+                                  {cls?.section && <span style={{ fontSize: 11, color: "#636985", marginLeft: 8 }}>({cls.section})</span>}
+                                </div>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: "#A29BFE" }}>{studentCount} élèves</span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Recent Grades */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Notes récentes</h3></div>
+                      <div style={{ padding: 20 }}>
+                        {recentGrades.length === 0 ? (
+                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucune note entrée</div>
+                        ) : (
+                          recentGrades.map(g => {
+                            const student = students.find(s => s.id === g.studentId);
+                            return (
+                              <div key={g.id} style={{ padding: "10px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div>
+                                  <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>{student?.name || "Élève"}</div>
+                                  <div style={{ fontSize: 11, color: "#636985", marginTop: 2 }}>{g.subject || "Sujet"}</div>
+                                </div>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: "#A29BFE" }}>{g.score}/20</span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Links */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                        <h3>Accès rapide</h3>
+                      </div>
+                      <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                        <Btn onClick={() => { setPage("att"); setSearch(""); }}>✓ Présences</Btn>
+                        <Btn onClick={() => { setPage("grades"); setSearch(""); }}>✎ Notes</Btn>
+                        <Btn onClick={() => { setPage("tmt"); setSearch(""); }}>⊟ Emploi du temps</Btn>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // ══════════════════════════════════════════════════════════════
+              // COMPTABLE (ACCOUNTANT) DASHBOARD
+              // ══════════════════════════════════════════════════════════════
+              if (role === "comptable") {
+                const totalIncome = finances.filter(f => f.type === "income").reduce((a, f) => a + Number(f.amount || 0), 0);
+                const totalExpense = finances.filter(f => f.type === "expense").reduce((a, f) => a + Number(f.amount || 0), 0);
+                const balance = totalIncome - totalExpense;
+                const recentTransactions = finances.slice(-5);
+                const budgetYear = new Date().getFullYear();
+                const yearBudgets = budgets.filter(b => b.year === budgetYear);
+                
+                return (
+                  <div>
+                    {/* Financial Overview */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
+                      <div style={S.stat}><div style={S.label}>Revenu Total</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{fmtCFA(totalIncome)}</div></div>
+                      <div style={S.stat}><div style={S.label}>Dépenses Totales</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#FF6B6B" }}>-{fmtCFA(totalExpense)}</div></div>
+                      <div style={S.stat}><div style={S.label}>Solde</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: balance >= 0 ? "#00B894" : "#FF6B6B" }}>{fmtCFA(balance)}</div></div>
+                      <div style={S.stat}><div style={S.label}>Transactions</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{finances.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>Total enregistrées</div></div>
+                    </div>
+
+                    {/* Budget Summary */}
+                    {yearBudgets.length > 0 && (
+                      <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                        <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Exécution du Budget {budgetYear}</h3></div>
+                        <div style={{ padding: 20 }}>
+                          {yearBudgets.slice(0, 5).map(b => {
+                            const spent = finances.filter(f => f.category === b.category && f.type === "expense").reduce((a, f) => a + Number(f.amount || 0), 0);
+                            const progress = b.amount > 0 ? Math.min((spent / b.amount) * 100, 100) : 0;
+                            const isOverBudget = spent > b.amount;
+                            return (
+                              <div key={b.id} style={{ marginBottom: 16 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>{b.category}</span>
+                                  <span style={{ fontSize: 12, color: isOverBudget ? "#FF6B6B" : "#636985" }}>
+                                    {fmtCFA(spent)} / {fmtCFA(b.amount)}
+                                  </span>
+                                </div>
+                                <div style={{ height: 8, background: "#1C1F2E", borderRadius: 4, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", width: `${progress}%`, background: isOverBudget ? "#FF6B6B" : "#6C5CE7", transition: "width 0.3s ease" }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recent Transactions */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Transactions Récentes</h3></div>
+                      <div style={{ padding: 20 }}>
+                        {recentTransactions.length === 0 ? (
+                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucune transaction</div>
+                        ) : (
+                          recentTransactions.map(t => (
+                            <div key={t.id} style={{ padding: "10px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>{t.category}</div>
+                                <div style={{ fontSize: 11, color: "#636985", marginTop: 2 }}>{t.date || "—"}</div>
+                              </div>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: t.type === "income" ? "#00B894" : "#FF6B6B" }}>
+                                {t.type === "income" ? "+" : "-"}{fmtCFA(Number(t.amount || 0))}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Links */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                        <h3>Accès rapide</h3>
+                      </div>
+                      <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                        <Btn onClick={() => { setPage("fin"); setSearch(""); }}>◆ Finances</Btn>
+                        <Btn onClick={() => { setPage("budget"); setSearch(""); }}>◇ Budget</Btn>
+                        <Btn onClick={() => { setPage("cant"); setSearch(""); }}>⊙ Cantine</Btn>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // ══════════════════════════════════════════════════════════════
+              // DEFAULT (AUTRE / OTHER)
+              // ══════════════════════════════════════════════════════════════
+              return (
+                <div>
+                  <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 32, textAlign: "center" }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Bienvenue</div>
+                    <div style={{ color: "#636985", marginBottom: 20 }}>Rôle: {ROLES[role] || role}</div>
+                    <Btn onClick={() => { setPage("msg"); setSearch(""); }}>⊛ Annonces</Btn>
                   </div>
                 </div>
-                {role === "admin" && (
-                  <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginTop: 20 }}>
-                    <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
-                      <h3>Données de l'établissement</h3>
-                    </div>
-                    <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                      <Btn variant="ghost" onClick={exportSchoolData}>↓ Exporter les données</Btn>
-                      <label>
-                        <input type="file" accept=".json" onChange={handleImportFile} style={{ display: "none" }} />
-                        <span style={{ ...S.btn, ...S.ghost, display: "inline-block", cursor: "pointer" }}>↑ Importer des données</span>
-                      </label>
-                    </div>
-                  </div>
-                )}
-                {role === "admin" && (
-                  <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginTop: 20, cursor: "pointer" }} onClick={() => { setPage("budget"); setSearch(""); }}>
-                    <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <h3>Budget {new Date().getFullYear()}</h3>
-                      <span style={{ fontSize: 12, color: "#636985" }}>Voir détails →</span>
-                    </div>
-                    <div style={{ padding: 20, display: "flex", gap: 20, flexWrap: "wrap" }}>
-                      <div>
-                        <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5 }}>Dépenses réelles / prévues</div>
-                        <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4, color: budgetData.actualExpense <= budgetData.plannedExpense || budgetData.plannedExpense === 0 ? "#00B894" : "#FF6B6B" }}>
-                          {budgetData.plannedExpense > 0 ? Math.round((budgetData.actualExpense / budgetData.plannedExpense) * 100) + "%" : "—"}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5 }}>Catégories en dépassement</div>
-                        <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4, color: budgetData.overBudgetItems.length > 0 ? "#FF6B6B" : "#00B894" }}>
-                          {budgetData.overBudgetItems.length}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5 }}>Statut</div>
-                        <div style={{ marginTop: 6 }}>
-                          <span style={S.badge(budgetData.overBudgetItems.length > 0 ? "red" : "green")}>
-                            {budgetData.overBudgetItems.length > 0 ? "Dépassement" : budgetData.plannedExpense > 0 ? "En bonne voie" : "Non défini"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+              );
+            })()}
+
 
             {/* Students */}
             {page === "stu" && (
@@ -1760,6 +2184,59 @@ export default function App() {
                           );
                         })
                       }
+                      {/* Parent Access Code Section */}
+                      {user?.role === "admin" && (
+                        (() => {
+                          const parCode = parentCodes.find(p => p.studentId === s.id);
+                          return (
+                            <div style={{ marginTop: 24, marginBottom: 16 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "#9BA1B7", marginBottom: 12 }}>🔗 Accès Portail Parent</div>
+                              {parCode ? (
+                                <div style={{ background: "#0F1117", borderRadius: 8, padding: 16, border: "1px solid #2A2E42" }}>
+                                  <div style={{ marginBottom: 12 }}>
+                                    <div style={{ fontSize: 11, color: "#636985", marginBottom: 4 }}>Code d'accès</div>
+                                    <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "monospace", color: "#7C6BFF", letterSpacing: 2, textAlign: "center", padding: "12px", background: "#161822", borderRadius: 6, marginBottom: 12 }}>{parCode.accessCode}</div>
+                                  </div>
+                                  {parCode.parentPhone && (
+                                    <div style={{ marginBottom: 12 }}>
+                                      <div style={{ fontSize: 11, color: "#636985", marginBottom: 4 }}>Téléphone parent</div>
+                                      <div style={{ fontSize: 13, color: "#E8EAF0" }}>{parCode.parentPhone}</div>
+                                    </div>
+                                  )}
+                                  {parCode.parentName && (
+                                    <div style={{ marginBottom: 12 }}>
+                                      <div style={{ fontSize: 11, color: "#636985", marginBottom: 4 }}>Nom du parent</div>
+                                      <div style={{ fontSize: 13, color: "#E8EAF0" }}>{parCode.parentName}</div>
+                                    </div>
+                                  )}
+                                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                                    <Btn small variant="ghost" onClick={() => {
+                                      navigator.clipboard.writeText(parCode.accessCode);
+                                      alert("Code copié dans le presse-papiers");
+                                    }}>📋 Copier le code</Btn>
+                                    <Btn small variant="ghost" onClick={async () => {
+                                      const newCode = await generateParentCode(s.id, s.name, s.parent || parCode.parentName, s.parentPhone || parCode.parentPhone);
+                                      setForm({ profileId: s.id });
+                                    }}>🔄 Régénérer</Btn>
+                                    <Btn small variant="danger" onClick={async () => {
+                                      await saveParentCodes(parentCodes.filter(p => p.id  !== parCode.id));
+                                      setForm({ profileId: s.id });
+                                    }}>⊗ Désactiver</Btn>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{ background: "#0F1117", borderRadius: 8, padding: 16, border: "1px solid #2A2E42", textAlign: "center" }}>
+                                  <div style={{ fontSize: 13, color: "#9BA1B7", marginBottom: 12 }}>Aucun code d'accès généré pour ce parent</div>
+                                  <Btn onClick={async () => {
+                                    await generateParentCode(s.id, s.name, s.parent || "Parent", s.parentPhone || "");
+                                    setForm({ profileId: s.id });
+                                  }}>+ Générer un code parent</Btn>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()
+                      )}
                     </Modal2>
                   );
                 })()}
