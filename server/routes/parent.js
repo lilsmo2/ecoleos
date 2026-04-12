@@ -22,7 +22,7 @@ function signTokens(payload) {
 }
 
 function parentGuard(req, res, next) {
-  if (\!req.user || req.user.role \!== "parent") {
+  if (!req.user || req.user.role !== "parent") {
     return res.status(403).json({ error: "Accès refusé" });
   }
   next();
@@ -32,12 +32,12 @@ function parentGuard(req, res, next) {
 router.post("/login", async (req, res) => {
   try {
     const { phone, accessCode, schoolCode } = req.body;
-    if (\!phone || \!accessCode || \!schoolCode) {
+    if (!phone || !accessCode || !schoolCode) {
       return res.status(400).json({ error: "Tous les champs sont requis" });
     }
 
     const school = await School.findOne({ code: schoolCode.toUpperCase() });
-    if (\!school) {
+    if (!school) {
       return res.status(401).json({ error: "Code établissement introuvable" });
     }
 
@@ -48,12 +48,12 @@ router.post("/login", async (req, res) => {
       status: "actif",
     });
 
-    if (\!parentAccess) {
+    if (!parentAccess) {
       return res.status(401).json({ error: "Téléphone ou code d'accès incorrect" });
     }
 
     const student = await Student.findById(parentAccess.studentId);
-    if (\!student) {
+    if (!student) {
       return res.status(404).json({ error: "Élève introuvable" });
     }
 
@@ -80,7 +80,7 @@ router.post("/login", async (req, res) => {
 router.get("/child", authenticate, parentGuard, async (req, res) => {
   try {
     const student = await Student.findById(req.user.studentId);
-    if (\!student) {
+    if (!student) {
       return res.status(404).json({ error: "Élève introuvable" });
     }
     res.json(student);
@@ -148,7 +148,7 @@ router.get("/discipline", authenticate, parentGuard, async (req, res) => {
 router.get("/timetable", authenticate, parentGuard, async (req, res) => {
   try {
     const student = await Student.findById(req.user.studentId);
-    if (\!student) {
+    if (!student) {
       return res.status(404).json({ error: "Élève introuvable" });
     }
 

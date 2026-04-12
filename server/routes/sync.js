@@ -30,11 +30,11 @@ const MODELS = {
 router.post("/push", authenticate, async (req, res) => {
   try {
     const { key, data } = req.body;
-    if (\!key || \!data) return res.status(400).json({ error: "key and data required" });
+    if (!key || !data) return res.status(400).json({ error: "key and data required" });
 
     // Parse key to determine model: eos3_stu_xxx → students
     const match = key.match(/^eos3_(stu|stf|fin|bud|att|grd|dsc|tmt|msg|par)_(.+)$/);
-    if (\!match) return res.status(400).json({ error: "Unknown key format" });
+    if (!match) return res.status(400).json({ error: "Unknown key format" });
 
     const typeMap = {
       stu: "students",
@@ -52,10 +52,10 @@ router.post("/push", authenticate, async (req, res) => {
     const schoolId = match[2];
     const Model = MODELS[modelName];
 
-    if (\!Model) return res.status(400).json({ error: "Unknown entity type" });
+    if (!Model) return res.status(400).json({ error: "Unknown entity type" });
 
     // Verify user has access to this school
-    if (req.user.role \!== "superadmin" && req.user.schoolId \!== schoolId) {
+    if (req.user.role !== "superadmin" && req.user.schoolId !== schoolId) {
       return res.status(403).json({ error: "Accès refusé" });
     }
 
@@ -88,9 +88,9 @@ router.post("/push", authenticate, async (req, res) => {
 router.post("/pull", authenticate, async (req, res) => {
   try {
     const { schoolId, types, lastSync } = req.body;
-    if (\!schoolId) return res.status(400).json({ error: "schoolId required" });
+    if (!schoolId) return res.status(400).json({ error: "schoolId required" });
 
-    if (req.user.role \!== "superadmin" && req.user.schoolId \!== schoolId) {
+    if (req.user.role !== "superadmin" && req.user.schoolId !== schoolId) {
       return res.status(403).json({ error: "Accès refusé" });
     }
 
@@ -100,7 +100,7 @@ router.post("/pull", authenticate, async (req, res) => {
     const requestedTypes = types || Object.keys(MODELS);
     for (const type of requestedTypes) {
       const Model = MODELS[type];
-      if (\!Model) continue;
+      if (!Model) continue;
       result[type] = await Model.find({
         schoolId,
         updatedAt: { $gte: since },
