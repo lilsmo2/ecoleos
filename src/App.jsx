@@ -1489,7 +1489,7 @@ export default function App() {
           {dl <= 7 && dl > 0 && <div style={{ padding: "8px 16px", background: "rgba(253,203,110,0.12)", fontSize: 11, color: "#FDCB6E", textAlign: "center", borderBottom: "1px solid rgba(253,203,110,0.2)" }}>Expire dans {dl}j</div>}
           <nav style={{ flex: 1, padding: "16px 12px", overflow: "auto" }}>
             {visiblePages.map(p => (
-              <div key={p.k} style={S.navItem(page === p.k)} onClick={() => { if (p.k === "pay") { window.open("/admin-payments.html", "_blank"); return; } setPage(p.k); setSearch(""); if (isMobile) closeSidebar(); }}>
+              <div key={p.k} style={S.navItem(page === p.k)} onClick={() => { setPage(p.k); setSearch(""); if (isMobile) closeSidebar(); }}>
                 <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{p.icon}</span>
                 {p.l}
               </div>
@@ -3798,6 +3798,252 @@ export default function App() {
                 )}
               </div>
             )}
+
+            {/* ══════════════════════════════════════════════════
+                PAYMENTS PAGE
+                ══════════════════════════════════════════════════ */}
+            {page === "pay" && (["admin","comptable","secretaire","directeur"].includes(role)) && (() => {
+              const [paySelId, setPaySelId] = [form.payPageSel, (v) => setForm(f => ({ ...f, payPageSel: v }))];
+              const selStu = students.find(s => s.id === paySelId);
+              const stuList = students.filter(s => s.status === "actif" || !s.status).sort((a,b) => a.name.localeCompare(b.name));
+              const filtered = search
+                ? stuList.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || (s.grade||"").toLowerCase().includes(search.toLowerCase()))
+                : stuList;
+
+              const totalCollected = studentPayments.reduce((a,p) => a + Number(p.amount||0), 0);
+              const totalDue = students.reduce((a,s) => a + Number(classTuition[s.grade]||0), 0);
+              const totalOutstanding = Math.max(0, totalDue - totalCollected);
+              const fullyPaid = students.filter(s => {
+                const due = Number(classTuition[s.grade]||0);
+                const paid = studentPayments.filter(p => p.studentId === s.id).reduce((a,p) => a + Number(p.amount||0), 0);
+                return due > 0 && paid >= due;
+              }).length;
+
+              const printReceipt = (pmt) => {
+                const s = students.find(x => x.id === pmt.studentId);
+                if (!s) return;
+                const allPmts = studentPayments.filter(p => p.studentId === pmt.studentId);
+                const totalPaid = allPmts.reduce((a,p) => a + Number(p.amount||0), 0);
+                const due = Number(classTuition[s.grade]||0);
+                const remaining = due > 0 ? Math.max(0, due - totalPaid) : null;
+                const idx = allPmts.sort((a,b) => new Date(a.date||0)-new Date(b.date||0)).findIndex(p => p.id === pmt.id) + 1;
+                const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reçu</title>
+                  <style>body{font-family:'Courier New',monospace;margin:60px;font-size:14px;color:#111}
+                  .center{text-align:center}.bold{font-weight:700}.school{font-size:17px;font-weight:700;text-align:center;text-transform:uppercase}
+                  .hr{border:none;border-top:1px dashed #555;margin:8px 0}.row{display:flex;justify-content:space-between;margin:4px 0}
+                  .total{display:flex;justify-content:space-between;font-weight:700;font-size:16px;border-top:1px solid #333;padding-top:6px;margin-top:8px}
+                  .sig{display:flex;justify-content:space-between;margin-top:30px;font-size:12px}
+                  .footer{text-align:center;font-size:11px;color:#666;margin-top:20px}</style></head><body>
+                  <div class="school">${school?.name||"ÉCOLE"}</div>
+                  ${school?.city ? `<div class="center" style="font-size:12px">${school.city}</div>` : ""}
+                  <hr class="hr">
+                  <div class="center bold" style="font-size:15px;text-transform:uppercase">Reçu de Paiement</div>
+                  <div class="center" style="font-size:12px">Versement n° ${idx}</div>
+                  <hr class="hr">
+                  <div class="row"><span>Nom &amp; Prénoms:</span><span class="bold">${s.name}</span></div>
+                  <div class="row"><span>Classe:</span><span class="bold">${s.grade||"—"}</span></div>
+                  ${s.parent ? `<div class="row"><span>Parent/Tuteur:</span><span class="bold">${s.parent}</span></div>` : ""}
+                  <div class="row"><span>Date:</span><span class="bold">${new Date(pmt.date||Date.now()).toLocaleDateString("fr-FR")}</span></div>
+                  ${pmt.note ? `<div class="row"><span>Note:</span><span>${pmt.note}</span></div>` : ""}
+                  <hr class="hr">
+                  <div class="total"><span>Montant versé:</span><span>${fmtCFA(Number(pmt.amount))}</span></div>
+                  ${due > 0 ? `<div class="row" style="margin-top:10px"><span>Total versé:</span><span class="bold">${fmtCFA(totalPaid)}</span></div>
+                  <div class="row"><span>Reste à payer:</span><span class="bold">${fmtCFA(remaining)}</span></div>` : ""}
+                  <div class="sig"><div>Signature du responsable<br><br>___________________</div><div style="text-align:right">Signature du payeur<br><br>___________________</div></div>
+                  <hr class="hr">
+                  <div class="footer">ÉcoleOS · ${new Date().toLocaleDateString("fr-FR")}</div>
+                  </body></html>`;
+                const win = window.open("","_blank","width=600,height=700");
+                if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 400); }
+              };
+
+              return (
+                <div>
+                  {/* Summary cards */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 16, marginBottom: 28 }}>
+                    {[
+                      ["Total collecté", fmtCFA(totalCollected), "#00B894"],
+                      ["Reste à collecter", fmtCFA(totalOutstanding), "#FF6B6B"],
+                      totalDue > 0 ? ["Taux de collecte", `${Math.min(100,Math.round(totalCollected/totalDue*100))}%`, "#A29BFE"] : null,
+                      ["Élèves soldés", `${fullyPaid} / ${students.filter(s => Number(classTuition[s.grade]||0)>0).length}`, "#FDCB6E"],
+                    ].filter(Boolean).map(([l,v,c]) => (
+                      <div key={l} style={{ ...S.stat, borderLeft: `3px solid ${c}` }}>
+                        <div style={S.label}>{l}</div>
+                        <div style={{ fontSize: 20, fontWeight: 700, marginTop: 8, color: c }}>{v}</div>
+                      </div>
+                    ))}
+                    {(role === "admin" || role === "comptable") && (
+                      <div style={{ ...S.stat, cursor: "pointer", borderLeft: "3px solid #636985" }} onClick={() => setModal("classTuition")}>
+                        <div style={S.label}>Frais par niveau</div>
+                        <div style={{ fontSize: 13, marginTop: 8, color: "#A29BFE" }}>⚙ Configurer</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, alignItems: "start" }}>
+                    {/* Student list */}
+                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "12px 16px", borderBottom: "1px solid #2A2E42" }}>
+                        <div style={S.search}>
+                          <span style={{ color: "#636985" }}>🔍</span>
+                          <input style={S.searchInput} placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} />
+                        </div>
+                      </div>
+                      <div style={{ maxHeight: 520, overflowY: "auto" }}>
+                        {filtered.map(s => {
+                          const due = Number(classTuition[s.grade]||0);
+                          const paid = studentPayments.filter(p => p.studentId === s.id).reduce((a,p) => a + Number(p.amount||0), 0);
+                          const pct = due > 0 ? Math.min(100, Math.round(paid/due*100)) : null;
+                          const isActive = paySelId === s.id;
+                          let statusColor = "#636985";
+                          if (due > 0) { statusColor = paid >= due ? "#00B894" : paid > 0 ? "#FDCB6E" : "#FF6B6B"; }
+                          return (
+                            <div key={s.id}
+                              style={{ padding: "10px 16px", cursor: "pointer", borderLeft: `3px solid ${isActive ? "#6C5CE7" : "transparent"}`, background: isActive ? "rgba(108,92,231,0.1)" : "transparent", borderBottom: "1px solid #2A2E42" }}
+                              onClick={() => setPaySelId(s.id)}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "#E8EAF0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+                              <div style={{ fontSize: 11, color: "#636985", marginTop: 2 }}>{s.grade}</div>
+                              {due > 0 && (
+                                <div style={{ marginTop: 5, height: 4, background: "#1C1F2E", borderRadius: 2, overflow: "hidden" }}>
+                                  <div style={{ width: `${pct}%`, height: "100%", background: statusColor, borderRadius: 2, transition: "width 0.3s" }} />
+                                </div>
+                              )}
+                              <div style={{ fontSize: 11, color: statusColor, marginTop: 3 }}>
+                                {due > 0 ? (paid >= due ? "✔ Soldé" : `${fmtCFA(paid)} / ${fmtCFA(due)}`) : paid > 0 ? fmtCFA(paid) : "Aucun paiement"}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {filtered.length === 0 && <div style={S.empty}>Aucun élève.</div>}
+                      </div>
+                    </div>
+
+                    {/* Detail panel */}
+                    {selStu ? (() => {
+                      const due = Number(classTuition[selStu.grade]||0);
+                      const pmts = studentPayments.filter(p => p.studentId === selStu.id).sort((a,b) => new Date(a.date||0)-new Date(b.date||0));
+                      const paid = pmts.reduce((a,p) => a + Number(p.amount||0), 0);
+                      const remaining = Math.max(0, due - paid);
+                      return (
+                        <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+                            <div>
+                              <h3 style={{ fontSize: 18, marginBottom: 4 }}>{selStu.name}</h3>
+                              <div style={{ fontSize: 12, color: "#636985" }}>{selStu.grade}{selStu.parent ? ` · ${selStu.parent}` : ""}</div>
+                            </div>
+                            {due > 0 && (
+                              <span style={S.badge(paid >= due ? "green" : paid > 0 ? "amber" : "red")}>
+                                {paid >= due ? "✔ Soldé" : paid > 0 ? "Partiel" : "Non payé"}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Summary cards */}
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 12, marginBottom: 20 }}>
+                            <div style={{ background: "#1C1F2E", borderRadius: 8, padding: "12px 16px" }}>
+                              <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 4 }}>Total payé</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: "#00B894" }}>{fmtCFA(paid)}</div>
+                            </div>
+                            {due > 0 && <>
+                              <div style={{ background: "#1C1F2E", borderRadius: 8, padding: "12px 16px" }}>
+                                <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 4 }}>Reste</div>
+                                <div style={{ fontSize: 16, fontWeight: 700, color: remaining > 0 ? "#FF6B6B" : "#00B894" }}>{fmtCFA(remaining)}</div>
+                              </div>
+                              <div style={{ background: "#1C1F2E", borderRadius: 8, padding: "12px 16px" }}>
+                                <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 4 }}>Total dû</div>
+                                <div style={{ fontSize: 16, fontWeight: 700 }}>{fmtCFA(due)}</div>
+                              </div>
+                            </>}
+                          </div>
+
+                          {/* Installments table */}
+                          <div style={{ marginBottom: 20 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#636985", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Historique des versements</div>
+                            {pmts.length === 0 && <div style={{ fontSize: 13, color: "#636985", padding: "16px 0" }}>Aucun versement enregistré.</div>}
+                            {pmts.length > 0 && (
+                              <table style={S.table}>
+                                <thead><tr>
+                                  <th style={S.th}>#</th>
+                                  <th style={S.th}>Montant</th>
+                                  <th style={S.th}>Date</th>
+                                  <th style={S.th}>Note</th>
+                                  <th style={S.th}></th>
+                                </tr></thead>
+                                <tbody>
+                                  {pmts.map((p,i) => (
+                                    <tr key={p.id}>
+                                      <td style={S.td}>{i+1}</td>
+                                      <td style={{ ...S.td, color: "#00B894", fontWeight: 600 }}>{fmtCFA(Number(p.amount))}</td>
+                                      <td style={S.td}>{p.date ? new Date(p.date).toLocaleDateString("fr-FR") : "—"}</td>
+                                      <td style={S.td}>{p.note||"—"}</td>
+                                      <td style={{ ...S.td, display: "flex", gap: 8 }}>
+                                        <Btn variant="ghost" small onClick={() => printReceipt(p)}>🖨 Reçu</Btn>
+                                        {(role === "admin" || role === "comptable") && (
+                                          <Btn variant="danger" small onClick={() => askConfirm("Supprimer ce versement ?", async () => { await saveStudentPayments(studentPayments.filter(x => x.id !== p.id)); })}>✕</Btn>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+
+                          {/* Add payment */}
+                          {(role === "admin" || role === "comptable" || role === "secretaire") && (
+                            <div style={{ borderTop: "1px solid #2A2E42", paddingTop: 20 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "#636985", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>Enregistrer un versement</div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                                <div>
+                                  <div style={S.label}>Montant (FCFA)</div>
+                                  <input style={{ ...S.input, marginTop: 6 }} type="number" placeholder="ex: 30000" value={form.payAmount||""} onChange={e => setForm(f => ({ ...f, payAmount: e.target.value }))} />
+                                </div>
+                                <div>
+                                  <div style={S.label}>Date</div>
+                                  <input style={{ ...S.input, marginTop: 6 }} type="date" value={form.payDate||new Date().toISOString().slice(0,10)} onChange={e => setForm(f => ({ ...f, payDate: e.target.value }))} />
+                                </div>
+                              </div>
+                              <div style={{ marginBottom: 12 }}>
+                                <div style={S.label}>Note (mode de paiement, reçu…)</div>
+                                <input style={{ ...S.input, marginTop: 6 }} placeholder="ex: Espèce, reçu n°42…" value={form.payNote||""} onChange={e => setForm(f => ({ ...f, payNote: e.target.value }))} />
+                              </div>
+                              <Btn loading={saving} onClick={async () => {
+                                if (!form.payAmount || isNaN(Number(form.payAmount))) return;
+                                const newPmt = { id: genId(), studentId: selStu.id, amount: Number(form.payAmount), date: form.payDate||new Date().toISOString().slice(0,10), note: form.payNote||"" };
+                                await saveStudentPayments([...studentPayments, newPmt]);
+                                setForm(f => ({ ...f, payAmount: "", payNote: "" }));
+                                printReceipt(newPmt);
+                              }}>+ Enregistrer et imprimer le reçu</Btn>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })() : (
+                      <div style={{ ...S.stat, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
+                        <div style={S.empty}>← Sélectionnez un élève pour gérer ses paiements</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Class Tuition Config Modal (reused) */}
+                  {modal === "classTuition" && (
+                    <Modal2 title="Frais de scolarité par niveau" onClose={() => setModal(null)}
+                      footer={<Btn variant="ghost" onClick={() => setModal(null)}>Fermer</Btn>}>
+                      <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>Définissez le montant annuel dû par niveau.</div>
+                      {NIV.map(n => (
+                        <div key={n} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                          <div style={{ fontSize: 13, color: "#E8EAF0" }}>{n}</div>
+                          <input style={{ ...S.input, marginTop: 0 }} type="number" placeholder="0" value={classTuition[n]||""} onChange={async e => {
+                            const updated = { ...classTuition, [n]: e.target.value ? Number(e.target.value) : 0 };
+                            await saveClassTuition(updated);
+                          }} />
+                        </div>
+                      ))}
+                    </Modal2>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Subscription */}
             {page === "sub" && role === "admin" && (
