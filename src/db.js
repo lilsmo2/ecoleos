@@ -21,19 +21,20 @@ function keyToEndpoint(k) {
   // eos3_msg_<schoolId> → /api/schools/<schoolId>/announcements
   // eos3_par_<schoolId> → /api/schools/<schoolId>/parentaccess
   // eos3_schools         → /api/schools
-  const match = k.match(/^eos3_(stu|stf|fin|bud|att|grd|dsc|tmt|msg|par)_(.+)$/);
+  const match = k.match(/^eos3_(stu|stf|fin|bud|att|grd|dsc|tmt|msg|par|stup)_(.+)$/);
   if (match) {
     const typeMap = {
-      stu: "students",
-      stf: "staff",
-      fin: "finances",
-      bud: "budgets",
-      att: "attendance",
-      grd: "grades",
-      dsc: "discipline",
-      tmt: "timetable",
-      msg: "announcements",
-      par: "parentaccess"
+      stu:  "students",
+      stf:  "staff",
+      fin:  "finances",
+      bud:  "budgets",
+      att:  "attendance",
+      grd:  "grades",
+      dsc:  "discipline",
+      tmt:  "timetable",
+      msg:  "announcements",
+      par:  "parentaccess",
+      stup: "tuition-payments",   // student tuition payment receipts
     };
     return `/api/schools/${match[2]}/${typeMap[match[1]]}`;
   }

@@ -10,6 +10,7 @@ import Discipline from "../models/Discipline.js";
 import Timetable from "../models/Timetable.js";
 import Announcement from "../models/Announcement.js";
 import ParentAccess from "../models/ParentAccess.js";
+import TuitionPayment from "../models/TuitionPayment.js";
 
 const router = Router();
 
@@ -24,6 +25,7 @@ const MODELS = {
   timetable: Timetable,
   announcements: Announcement,
   parentaccess: ParentAccess,
+  "tuition-payments": TuitionPayment,
 };
 
 // POST /api/sync/push — push local changes to server
@@ -33,7 +35,7 @@ router.post("/push", authenticate, async (req, res) => {
     if (!key || !data) return res.status(400).json({ error: "key and data required" });
 
     // Parse key to determine model: eos3_stu_xxx → students
-    const match = key.match(/^eos3_(stu|stf|fin|bud|att|grd|dsc|tmt|msg|par)_(.+)$/);
+    const match = key.match(/^eos3_(stu|stf|fin|bud|att|grd|dsc|tmt|msg|par|stup)_(.+)$/);
     if (!match) return res.status(400).json({ error: "Unknown key format" });
 
     const typeMap = {
@@ -44,9 +46,10 @@ router.post("/push", authenticate, async (req, res) => {
       att: "attendance",
       grd: "grades",
       dsc: "discipline",
-      tmt: "timetable",
-      msg: "announcements",
-      par: "parentaccess",
+      tmt:  "timetable",
+      msg:  "announcements",
+      par:  "parentaccess",
+      stup: "tuition-payments",
     };
     const modelName = typeMap[match[1]];
     const schoolId = match[2];
