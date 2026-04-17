@@ -242,6 +242,14 @@ const _injectStyles = typeof document !== "undefined" && (() => {
   return el;
 })();
 
+// ── Print header helper (logo + school name) ──
+function buildPrintHead(name, city, logo) {
+  const logoHtml = logo
+    ? `<img src="${logo}" style="max-height:80px;max-width:200px;display:block;margin:0 auto 8px" alt="logo">`
+    : "";
+  return `${logoHtml}<div style="font-size:17px;font-weight:700;text-align:center;text-transform:uppercase;margin-bottom:2px">${name || "ÉCOLE"}</div>${city ? `<div style="text-align:center;font-size:12px;margin-bottom:6px">${city}</div>` : ""}`;
+}
+
 // ══════════════════════════════════════════════════
 export default function App() {
   const [step, setStep] = useState("license"); // starts with license check
@@ -312,6 +320,16 @@ export default function App() {
   // responsive sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // profile & display settings
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileTab, setProfileTab] = useState("display");
+  const [zoom, setZoom] = useState(() => Number(localStorage.getItem("eos3_zoom") || 100));
+  const [theme, setTheme] = useState(() => localStorage.getItem("eos3_theme") || "dark");
+  const [schoolLogo, setSchoolLogo] = useState(null);
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwErr, setPwErr] = useState("");
+  const [pwOk, setPwOk] = useState(false);
 
   // ── Init: check license, then load schools ──
   useEffect(() => {
@@ -426,6 +444,16 @@ export default function App() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  useEffect(() => {
+    document.documentElement.style.zoom = zoom + "%";
+    localStorage.setItem("eos3_zoom", String(zoom));
+  }, [zoom]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("eos3_theme", theme);
+  }, [theme]);
+
   const saveSchools = useCallback(async (list) => {
     setSaving(true);
     setSchools(list);
@@ -508,6 +536,7 @@ export default function App() {
     const stup = await db.get("eos3_stup_" + id); setStudentPayments(stup || []);
     const tuit = await db.get("eos3_tuition_" + id); setClassTuition(tuit || {});
     const par = await db.get("eos3_par_" + id); setParentCodes(par || []);
+    const logo = await db.get("eos3_logo_" + id); setSchoolLogo(logo || null);
     setLoading(false);
   }, []);
 
@@ -1524,11 +1553,131 @@ export default function App() {
             ))}
           </nav>
           <div style={{ padding: "12px 20px", borderTop: `1px solid ${T.border}` }}>
-            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>{user?.name}</div>
-            <div style={{ fontSize: 11, color: T.text3, marginBottom: 8 }}>{ROLES[role] || role}</div>
-            <Btn variant="ghost" full small onClick={logout}>Déconnexion</Btn>
+            <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{user?.name}</div>
+            <div style={{ fontSize: 11, color: T.text3, marginBottom: 10 }}>{ROLES[role] || role}</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                style={{ ...S.btn, ...S.ghost, padding: "5px 10px", fontSize: 15, flexShrink: 0 }}
+                onClick={() => { setProfileTab("display"); setPwErr(""); setPwOk(false); setPwForm({ current: "", next: "", confirm: "" }); setProfileOpen(true); }}
+                title="Paramètres du profil"
+              >⚙</button>
+              <Btn variant="ghost" full small onClick={logout}>Déconnexion</Btn>
+            </div>
           </div>
         </aside>
+
+        {/* ── Profile settings modal ── */}
+        {profileOpen && (
+          <Modal2
+            title="Paramètres"
+            onClose={() => setProfileOpen(false)}
+            footer={<Btn variant="ghost" onClick={() => setProfileOpen(false)}>Fermer</Btn>}
+          >
+            {/* Tabs */}
+            <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: `1px solid ${T.border}`, paddingBottom: 12 }}>
+              {[["display", "Affichage"], ["account", "Compte"], ...(role === "admin" ? [["school", "École"]] : [])].map(([k, l]) => (
+                <button key={k} onClick={() => setProfileTab(k)} style={{ ...S.btn, ...(profileTab === k ? S.success : S.ghost), padding: "5px 14px", fontSize: 12 }}>{l}</button>
+              ))}
+            </div>
+
+            {/* Display tab */}
+            {profileTab === "display" && (
+              <div>
+                <div style={{ marginBottom: 24 }}>
+                  <div style={S.label}>Zoom</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+                    <button style={{ ...S.btn, ...S.ghost, padding: "4px 12px", fontSize: 16 }} onClick={() => setZoom(z => Math.max(70, z - 10))}>−</button>
+                    <div style={{ flex: 1, textAlign: "center", fontFamily: T.mono, fontSize: 15, fontWeight: 600, color: T.accent }}>{zoom}%</div>
+                    <button style={{ ...S.btn, ...S.ghost, padding: "4px 12px", fontSize: 16 }} onClick={() => setZoom(z => Math.min(140, z + 10))}>+</button>
+                    <button style={{ ...S.btn, ...S.ghost, padding: "4px 10px", fontSize: 11 }} onClick={() => setZoom(100)}>Réinitialiser</button>
+                  </div>
+                </div>
+                <div>
+                  <div style={S.label}>Thème</div>
+                  <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+                    {[["dark", "🌙 Sombre"], ["light", "☀️ Clair"]].map(([k, l]) => (
+                      <button key={k} onClick={() => setTheme(k)} style={{ ...S.btn, ...(theme === k ? S.success : S.ghost), flex: 1, fontSize: 13 }}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Account tab */}
+            {profileTab === "account" && (
+              <div>
+                <div style={{ fontSize: 13, color: T.text2, marginBottom: 16 }}>Changer le mot de passe pour <strong style={{ color: T.text }}>{user?.name}</strong></div>
+                {pwErr && <div style={S.err}>{pwErr}</div>}
+                {pwOk && <div style={{ ...S.err, background: T.accentDim, color: T.accent, border: `1px solid ${T.accentGlow}`, marginBottom: 16 }}>✓ Mot de passe modifié avec succès</div>}
+                <Field label="Mot de passe actuel" type="password" value={pwForm.current} onChange={v => setPwForm(f => ({ ...f, current: v }))} placeholder="••••••••" />
+                <Field label="Nouveau mot de passe" type="password" value={pwForm.next} onChange={v => setPwForm(f => ({ ...f, next: v }))} placeholder="Min. 6 caractères" />
+                <Field label="Confirmer" type="password" value={pwForm.confirm} onChange={v => setPwForm(f => ({ ...f, confirm: v }))} placeholder="Répéter le nouveau mot de passe" />
+                <Btn full onClick={async () => {
+                  setPwErr(""); setPwOk(false);
+                  if (!pwForm.current || !pwForm.next) { setPwErr("Remplissez tous les champs"); return; }
+                  if (pwForm.next.length < 6) { setPwErr("Minimum 6 caractères"); return; }
+                  if (pwForm.next !== pwForm.confirm) { setPwErr("Les mots de passe ne correspondent pas"); return; }
+                  if (role === "admin") {
+                    const sc = schools.find(s => s.id === school?.id);
+                    if (!sc) { setPwErr("École introuvable"); return; }
+                    const ok = sc.adminPassHash ? await verifyPassword(pwForm.current, sc.adminPassHash) : false;
+                    if (!ok) { setPwErr("Mot de passe actuel incorrect"); return; }
+                    const newHash = await hashPassword(pwForm.next);
+                    await saveSchools(schools.map(s => s.id === sc.id ? { ...s, adminPassHash: newHash } : s));
+                  } else {
+                    const stf = await db.get("eos3_stf_" + school?.id) || [];
+                    const m = stf.find(s => s.name === user?.name);
+                    if (!m) { setPwErr("Utilisateur introuvable"); return; }
+                    const ok = m.passHash ? await verifyPassword(pwForm.current, m.passHash) : false;
+                    if (!ok) { setPwErr("Mot de passe actuel incorrect"); return; }
+                    const newHash = await hashPassword(pwForm.next);
+                    await saveStaff(stf.map(s => s === m ? { ...s, passHash: newHash } : s));
+                  }
+                  setPwOk(true); setPwForm({ current: "", next: "", confirm: "" });
+                }}>Changer le mot de passe</Btn>
+              </div>
+            )}
+
+            {/* School tab (admin only) */}
+            {profileTab === "school" && role === "admin" && (
+              <div>
+                <div style={{ marginBottom: 20 }}>
+                  <div style={S.label}>Logo de l'établissement</div>
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+                    {schoolLogo
+                      ? <img src={schoolLogo} alt="logo" style={{ maxHeight: 90, maxWidth: 200, borderRadius: 8, border: `1px solid ${T.border}`, padding: 8, background: "#fff" }} />
+                      : <div style={{ width: 120, height: 80, borderRadius: 8, border: `2px dashed ${T.border2}`, display: "flex", alignItems: "center", justifyContent: "center", color: T.text3, fontSize: 12 }}>Aucun logo</div>
+                    }
+                    <label style={{ ...S.btn, ...S.ghost, cursor: "pointer", fontSize: 13, display: "inline-block" }}>
+                      {schoolLogo ? "Changer le logo" : "Télécharger un logo"}
+                      <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 500 * 1024) { alert("Image trop grande (max 500 Ko)"); return; }
+                        const reader = new FileReader();
+                        reader.onload = async ev => {
+                          const dataUrl = ev.target.result;
+                          setSchoolLogo(dataUrl);
+                          await db.set("eos3_logo_" + school?.id, dataUrl);
+                        };
+                        reader.readAsDataURL(file);
+                      }} />
+                    </label>
+                    {schoolLogo && (
+                      <button style={{ ...S.btn, ...S.danger, fontSize: 12, padding: "4px 12px" }} onClick={async () => {
+                        setSchoolLogo(null);
+                        await db.set("eos3_logo_" + school?.id, null);
+                      }}>Supprimer le logo</button>
+                    )}
+                  </div>
+                  <div style={{ marginTop: 12, fontSize: 12, color: T.text3, textAlign: "center" }}>
+                    Le logo apparaîtra sur les reçus et documents imprimés. PNG ou JPG, max 500 Ko.
+                  </div>
+                </div>
+              </div>
+            )}
+          </Modal2>
+        )}
 
         {/* Main */}
         <main className="eos-main" style={{ ...S.main, ...(isMobile ? S.mainFull : {}) }}>
@@ -3515,7 +3664,7 @@ export default function App() {
                     const paid = studentPayments.filter(p => p.studentId === stu.id).reduce((a,p) => a + Number(p.amount||0), 0);
                     const due = Number(classTuition[stu.grade] || 0);
                     const pages = [];
-                    const hdr = `<h2 style="text-align:center;margin-bottom:4px">${school?.name||""}</h2>`;
+                    const hdr = `<div style="text-align:center;margin-bottom:4px">${buildPrintHead(school?.name, school?.city, schoolLogo)}</div>`;
                     if (form.mrInscription) pages.push(`${hdr}<h3 style="text-align:center">Reçu d'inscription — ${year}</h3><p><strong>Élève :</strong> ${stu.name}<br><strong>Classe :</strong> ${stu.grade}<br><strong>Parent :</strong> ${stu.parent||"—"}<br><strong>Montant dû :</strong> ${fmtCFA(due)}<br><strong>Montant payé :</strong> ${fmtCFA(paid)}<br><strong>Reste :</strong> ${fmtCFA(Math.max(0,due-paid))}<br><strong>Date :</strong> ${date}</p><br><p>Signature et cachet</p>`);
                     if (form.mrNonRed) pages.push(`${hdr}<h3 style="text-align:center">Certificat de Non-Redevance</h3><p>Nous soussignés, Direction de <strong>${school?.name||""}</strong>, certifions que l'élève <strong>${stu.name}</strong>, inscrit(e) en <strong>${stu.grade}</strong>, ne doit aucune somme à notre établissement et n'a aucune dette en cours à la date du <strong>${date}</strong>.<br><br>Ce document lui est délivré pour servir et valoir ce que de droit.</p><br><br><p>Fait le ${date}<br><br>Signature et cachet</p>`);
                     if (form.mrCantine) pages.push(`${hdr}<h3 style="text-align:center">Reçu Cantine — ${form.mrMonth||"—"}</h3><p><strong>Élève :</strong> ${stu.name}<br><strong>Classe :</strong> ${stu.grade}<br><strong>Mois :</strong> ${form.mrMonth||"—"}<br><strong>Date :</strong> ${date}</p><br><p>Reçu pour paiement de la cantine scolaire.<br><br>Signature et cachet</p>`);
@@ -3550,7 +3699,7 @@ export default function App() {
                         body = `REÇU BIBLIOTHÈQUE\n\nÉlève : ${stu.name}\nLivre : ${bk?.title || "—"}\nAuteur : ${bk?.author || "—"}\nDate de prêt : ${loan?.date || "—"}\nRetour prévu : ${loan?.due || "—"}\n\nÉtablissement : ${school?.name}\nDate d'émission : ${date}\n\nSignature`;
                       }
                       const win = window.open("", "_blank");
-                      if (win) { win.document.write(`<html><head><title>${form.docLabel}</title><style>body{font-family:serif;margin:60px;font-size:16px;line-height:1.8}h2{text-align:center;margin-bottom:40px}h3{text-align:center}</style></head><body><h2>${school?.name}</h2><h3>${form.docLabel}</h3><p style="white-space:pre-line">${body}</p></body></html>`); win.document.close(); win.print(); }
+                      if (win) { win.document.write(`<html><head><title>${form.docLabel}</title><style>body{font-family:serif;margin:60px;font-size:16px;line-height:1.8}h3{text-align:center;margin-top:8px}</style></head><body>${buildPrintHead(school?.name, school?.city, schoolLogo)}<h3>${form.docLabel}</h3><p style="white-space:pre-line">${body}</p></body></html>`); win.document.close(); win.print(); }
                     }}>Imprimer</Btn></div>}>
                     <div style={{ marginBottom: 16 }}><div style={S.label}>Élève</div>
                       <select style={S.input} value={form.docStudent || ""} onChange={e => setForm({ ...form, docStudent: e.target.value })}>
@@ -3593,7 +3742,7 @@ export default function App() {
                       const rows = ranked.map((s, i) => `<tr><td style="padding:8px 16px;border-bottom:1px solid #eee;text-align:center">${s.avg >= 0 ? i + 1 : "—"}</td><td style="padding:8px 16px;border-bottom:1px solid #eee">${s.name}</td><td style="padding:8px 16px;border-bottom:1px solid #eee;text-align:center;font-weight:600">${s.avgStr}</td></tr>`).join("");
                       const date = new Date().toLocaleDateString("fr-FR");
                       const win = window.open("","_blank");
-                      if (win) { win.document.write(`<html><head><title>Palmarès</title><style>body{font-family:serif;margin:40px}table{width:100%;border-collapse:collapse}th{background:#f0f0f0;padding:10px 16px;text-align:left}</style></head><body><h2 style="text-align:center">${school?.name}</h2><h3 style="text-align:center">Palmarès — ${cls.name} — ${term}</h3><p style="text-align:right;font-size:13px">Édité le ${date}</p><table><thead><tr><th style="text-align:center">Rang</th><th>Élève</th><th style="text-align:center">Moyenne /20</th></tr></thead><tbody>${rows}</tbody></table></body></html>`); win.document.close(); win.print(); }
+                      if (win) { win.document.write(`<html><head><title>Palmarès</title><style>body{font-family:serif;margin:40px}table{width:100%;border-collapse:collapse}th{background:#f0f0f0;padding:10px 16px;text-align:left}</style></head><body>${buildPrintHead(school?.name, school?.city, schoolLogo)}<h3 style="text-align:center">Palmarès — ${cls.name} — ${term}</h3><p style="text-align:right;font-size:13px">Édité le ${date}</p><table><thead><tr><th style="text-align:center">Rang</th><th>Élève</th><th style="text-align:center">Moyenne /20</th></tr></thead><tbody>${rows}</tbody></table></body></html>`); win.document.close(); win.print(); }
                     }}>Imprimer</Btn></div>}>
                     <div style={{ marginBottom: 16 }}><div style={S.label}>Classe</div>
                       <select style={S.input} value={form.palmClass || ""} onChange={e => setForm({ ...form, palmClass: e.target.value })}>
@@ -3862,8 +4011,7 @@ export default function App() {
                   .total{display:flex;justify-content:space-between;font-weight:700;font-size:16px;border-top:1px solid #333;padding-top:6px;margin-top:8px}
                   .sig{display:flex;justify-content:space-between;margin-top:30px;font-size:12px}
                   .footer{text-align:center;font-size:11px;color:#666;margin-top:20px}</style></head><body>
-                  <div class="school">${school?.name||"ÉCOLE"}</div>
-                  ${school?.city ? `<div class="center" style="font-size:12px">${school.city}</div>` : ""}
+                  ${buildPrintHead(school?.name, school?.city, schoolLogo)}
                   <hr class="hr">
                   <div class="center bold" style="font-size:15px;text-transform:uppercase">Reçu de Paiement</div>
                   <div class="center" style="font-size:12px">Versement n° ${idx}</div>

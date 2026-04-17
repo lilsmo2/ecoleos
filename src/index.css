@@ -119,6 +119,28 @@ button:active:not(:disabled) { transform: scale(0.98); }
   .eos-modal-card { width: 95% !important; max-height: 90vh !important; }
   body { overflow-x: hidden !important; }
 }
+/* ── Light theme ── */
+[data-theme="light"] {
+  --bg:          #F0F4FA;
+  --surface:     #FFFFFF;
+  --surface2:    #E8EDF5;
+  --border:      #D0D9E8;
+  --border2:     #B8C5D9;
+  --accent:      #009E84;
+  --accent-dim:  rgba(0, 158, 132, 0.10);
+  --accent-glow: rgba(0, 158, 132, 0.20);
+  --text:        #0D1520;
+  --text2:       #4A5C78;
+  --text3:       #8A9DB8;
+  --danger:      #D93050;
+  --danger-dim:  rgba(217, 48, 80, 0.10);
+  --amber:       #C87800;
+  --amber-dim:   rgba(200, 120, 0, 0.10);
+  --success:     #009E84;
+}
+[data-theme="light"] .eos-nav-item:hover { background: rgba(0,0,0,0.04) !important; }
+[data-theme="light"] .eos-tr:hover td { background: rgba(0,0,0,0.02); }
+
 @media (max-width: 480px) {
   .eos-topbar { padding: 0 12px !important; height: 56px !important; }
   .eos-content { padding: 12px !important; }
