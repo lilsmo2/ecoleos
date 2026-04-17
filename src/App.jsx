@@ -85,45 +85,88 @@ const NAV_PAGES = [
   { k: "sub", l: "Abonnement", icon: "◈", roles: ["admin"] },
 ];
 
+// ── Design tokens ──
+const T = {
+  bg:         "#060A10",
+  surface:    "#0B1018",
+  surface2:   "#101520",
+  border:     "#1A2235",
+  border2:    "#243048",
+  accent:     "#00D9B8",
+  accentDim:  "rgba(0,217,184,0.10)",
+  accentGlow: "rgba(0,217,184,0.22)",
+  text:       "#EFF3FA",
+  text2:      "#7A8BA6",
+  text3:      "#3D4F68",
+  danger:     "#FF4560",
+  dangerDim:  "rgba(255,69,96,0.12)",
+  amber:      "#FFB547",
+  amberDim:   "rgba(255,181,71,0.12)",
+  font:       "'Sora', system-ui, sans-serif",
+  mono:       "'JetBrains Mono', monospace",
+};
+
 // ── Styles (hoisted outside component) ──
 const S = {
-  page: { minHeight: "100vh", background: "#0F1117", color: "#E8EAF0", fontFamily: "'Segoe UI',system-ui,sans-serif" },
-  center: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" },
-  card: { background: "#161822", border: "1px solid #2A2E42", borderRadius: 16, padding: 40, width: 420, maxWidth: "90vw" },
-  input: { width: "100%", padding: "10px 14px", background: "#1C1F2E", border: "1px solid #2A2E42", borderRadius: 6, color: "#E8EAF0", fontSize: 14, outline: "none", marginTop: 6, boxSizing: "border-box" },
-  label: { fontSize: 12, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 },
-  btn: { padding: "10px 20px", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 14 },
-  primary: { background: "#6C5CE7", color: "#fff" },
-  ghost: { background: "transparent", color: "#9BA1B7", border: "1px solid #2A2E42" },
-  danger: { background: "rgba(255,107,107,0.12)", color: "#FF6B6B" },
-  success: { background: "rgba(0,184,148,0.12)", color: "#00B894" },
-  err: { background: "rgba(255,107,107,0.12)", color: "#FF6B6B", padding: "10px 14px", borderRadius: 6, fontSize: 13, marginBottom: 16 },
-  sidebar: { width: 260, background: "#161822", borderRight: "1px solid #2A2E42", position: "fixed", top: 0, left: 0, bottom: 0, display: "flex", flexDirection: "column", zIndex: 100, transition: "transform 0.3s ease" },
-  sidebarHidden: { transform: "translateX(-260px)" },
-  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 99 },
-  main: { marginLeft: 260, flex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", transition: "margin-left 0.3s ease" },
+  page:     { minHeight: "100vh", background: T.bg, color: T.text, fontFamily: T.font },
+  center:   { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: T.bg },
+  card:     { background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 16, padding: 40, width: 440, maxWidth: "92vw", boxShadow: "0 24px 80px rgba(0,0,0,0.5)" },
+  input:    { width: "100%", padding: "10px 14px", background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 7, color: T.text, fontSize: 14, outline: "none", marginTop: 6, boxSizing: "border-box", fontFamily: T.font },
+  label:    { fontSize: 11, color: T.text3, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 },
+  btn:      { padding: "10px 20px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, fontFamily: T.font, letterSpacing: 0.2 },
+  primary:  { background: T.accent, color: T.bg, border: "none" },
+  ghost:    { background: "transparent", color: T.text2, border: `1px solid ${T.border2}` },
+  danger:   { background: T.dangerDim, color: T.danger, border: `1px solid rgba(255,69,96,0.2)` },
+  success:  { background: T.accentDim, color: T.accent, border: `1px solid ${T.accentGlow}` },
+  err:      { background: T.dangerDim, color: T.danger, padding: "10px 14px", borderRadius: 7, fontSize: 13, marginBottom: 16, border: `1px solid rgba(255,69,96,0.2)` },
+  sidebar:  { width: 240, background: T.surface, borderRight: `1px solid ${T.border}`, position: "fixed", top: 0, left: 0, bottom: 0, display: "flex", flexDirection: "column", zIndex: 100, transition: "transform 0.25s cubic-bezier(0.4,0,0.2,1)" },
+  sidebarHidden: { transform: "translateX(-240px)" },
+  overlay:  { position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 99, backdropFilter: "blur(2px)" },
+  main:     { marginLeft: 240, flex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", transition: "margin-left 0.25s cubic-bezier(0.4,0,0.2,1)" },
   mainFull: { marginLeft: 0 },
-  topbar: { height: 64, borderBottom: "1px solid #2A2E42", display: "flex", alignItems: "center", padding: "0 32px", background: "#0F1117", gap: 16 },
-  content: { flex: 1, padding: "28px 32px" },
-  navItem: (active) => ({ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 500, color: active ? "#A29BFE" : "#9BA1B7", background: active ? "rgba(108,92,231,0.12)" : "transparent", marginBottom: 2 }),
-  badge: (color) => ({ display: "inline-flex", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: color === "green" ? "rgba(0,184,148,0.12)" : color === "red" ? "rgba(255,107,107,0.12)" : color === "amber" ? "rgba(253,203,110,0.12)" : "rgba(108,92,231,0.12)", color: color === "green" ? "#00B894" : color === "red" ? "#FF6B6B" : color === "amber" ? "#FDCB6E" : "#A29BFE" }),
-  table: { width: "100%", borderCollapse: "collapse" },
-  th: { textAlign: "left", padding: "12px 20px", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8, color: "#636985", borderBottom: "1px solid #2A2E42", fontWeight: 600 },
-  td: { padding: "12px 20px", fontSize: 13, borderBottom: "1px solid #2A2E42", color: "#9BA1B7" },
-  modal: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 },
-  modalCard: { background: "#161822", border: "1px solid #2A2E42", borderRadius: 12, width: "90%", maxWidth: 500, maxHeight: "85vh", overflow: "auto" },
-  stat: { background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 20 },
-  search: { display: "flex", alignItems: "center", gap: 8, background: "#1C1F2E", border: "1px solid #2A2E42", borderRadius: 6, padding: "6px 12px", flex: 1, maxWidth: 320 },
-  searchInput: { background: "transparent", border: "none", outline: "none", color: "#E8EAF0", fontSize: 13, flex: 1 },
-  empty: { textAlign: "center", padding: 48, color: "#636985" },
-  spinner: { display: "inline-block", width: 20, height: 20, border: "2px solid #2A2E42", borderTopColor: "#6C5CE7", borderRadius: "50%", animation: "spin 0.6s linear infinite" },
+  topbar:   { height: 60, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", padding: "0 28px", background: T.surface, gap: 16 },
+  content:  { flex: 1, padding: "24px 28px" },
+  navItem:  (active) => ({
+    display: "flex", alignItems: "center", gap: 10,
+    padding: "9px 14px 9px 12px",
+    borderRadius: 7, cursor: "pointer",
+    fontSize: 13, fontWeight: active ? 600 : 400,
+    color: active ? T.accent : T.text2,
+    background: active ? T.accentDim : "transparent",
+    borderLeft: `2px solid ${active ? T.accent : "transparent"}`,
+    marginBottom: 2, letterSpacing: 0.1,
+  }),
+  badge: (color) => ({
+    display: "inline-flex", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+    background: color === "green" ? T.accentDim : color === "red" ? T.dangerDim : color === "amber" ? T.amberDim : "rgba(99,102,241,0.12)",
+    color:      color === "green" ? T.accent    : color === "red" ? T.danger    : color === "amber" ? T.amber    : "#818CF8",
+    border:     `1px solid ${color === "green" ? T.accentGlow : color === "red" ? "rgba(255,69,96,0.2)" : color === "amber" ? "rgba(255,181,71,0.2)" : "rgba(99,102,241,0.2)"}`,
+  }),
+  table:       { width: "100%", borderCollapse: "collapse" },
+  th:          { textAlign: "left", padding: "11px 18px", fontSize: 10, textTransform: "uppercase", letterSpacing: 1.2, color: T.text3, borderBottom: `1px solid ${T.border}`, fontWeight: 600 },
+  td:          { padding: "11px 18px", fontSize: 13, borderBottom: `1px solid ${T.border}`, color: T.text2 },
+  modal:       { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, backdropFilter: "blur(4px)" },
+  modalCard:   { background: T.surface, border: `1px solid ${T.border2}`, borderRadius: 14, width: "90%", maxWidth: 500, maxHeight: "85vh", overflow: "auto", boxShadow: "0 40px 100px rgba(0,0,0,0.6)" },
+  stat:        { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: "20px 24px", borderTop: `2px solid ${T.accentGlow}`, transition: "border-color 0.2s" },
+  search:      { display: "flex", alignItems: "center", gap: 8, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 13px", flex: 1, maxWidth: 320 },
+  searchInput: { background: "transparent", border: "none", outline: "none", color: T.text, fontSize: 13, flex: 1, fontFamily: T.font },
+  empty:       { textAlign: "center", padding: 56, color: T.text3 },
+  spinner:     { display: "inline-block", width: 18, height: 18, border: `2px solid ${T.border2}`, borderTopColor: T.accent, borderRadius: "50%", animation: "spin 0.65s linear infinite" },
 };
 
 // ── Shared components ──
 const Field = ({ label, value, onChange, type, placeholder, style: s2, onKeyDown, disabled }) => (
   <div style={{ marginBottom: 16 }}>
     <div style={S.label}>{label}</div>
-    <input style={{ ...S.input, ...s2, opacity: disabled ? 0.5 : 1 }} type={type || "text"} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} onKeyDown={onKeyDown} disabled={disabled} />
+    <input
+      style={{ ...S.input, ...s2, opacity: disabled ? 0.45 : 1 }}
+      type={type || "text"}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      onKeyDown={onKeyDown}
+      disabled={disabled}
+    />
   </div>
 );
 
@@ -133,27 +176,27 @@ const Btn = ({ children, variant, onClick, full, small, disabled, loading }) => 
       ...S.btn,
       ...(variant === "ghost" ? S.ghost : variant === "danger" ? S.danger : variant === "success" ? S.success : S.primary),
       width: full ? "100%" : "auto",
-      padding: small ? "6px 12px" : undefined,
+      padding: small ? "5px 11px" : undefined,
       fontSize: small ? 12 : undefined,
-      opacity: disabled || loading ? 0.6 : 1,
+      opacity: disabled || loading ? 0.45 : 1,
       pointerEvents: disabled || loading ? "none" : "auto",
     }}
     onClick={onClick}
     disabled={disabled || loading}
   >
-    {loading ? "..." : children}
+    {loading ? <span style={{ fontFamily: T.mono, fontSize: 12 }}>···</span> : children}
   </button>
 );
 
 const Modal2 = ({ title, onClose, children, footer }) => (
   <div style={S.modal} onClick={onClose}>
-    <div style={S.modalCard} onClick={e => e.stopPropagation()}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: "1px solid #2A2E42" }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600 }}>{title}</h3>
-        <button style={{ ...S.btn, ...S.ghost, padding: "4px 8px" }} onClick={onClose}>✕</button>
+    <div style={S.modalCard} className="eos-modal-card" onClick={e => e.stopPropagation()}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 24px", borderBottom: `1px solid ${T.border}` }}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, letterSpacing: 0.1 }}>{title}</h3>
+        <button style={{ ...S.btn, ...S.ghost, padding: "3px 9px", fontSize: 16, lineHeight: 1 }} onClick={onClose}>✕</button>
       </div>
-      <div style={{ padding: 24 }}>{children}</div>
-      {footer && <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "16px 24px", borderTop: "1px solid #2A2E42" }}>{footer}</div>}
+      <div style={{ padding: "20px 24px" }}>{children}</div>
+      {footer && <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "14px 24px", borderTop: `1px solid ${T.border}` }}>{footer}</div>}
     </div>
   </div>
 );
@@ -165,65 +208,35 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => (
       <Btn variant="danger" onClick={onConfirm}>Confirmer</Btn>
     </div>
   }>
-    <p style={{ color: "#9BA1B7", lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>{message}</p>
+    <p style={{ color: T.text2, lineHeight: 1.7, margin: 0, whiteSpace: "pre-line", fontSize: 14 }}>{message}</p>
   </Modal2>
 );
 
 const EmptyState = ({ icon, title, subtitle }) => (
   <div style={S.empty}>
-    <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>{icon || "○"}</div>
-    <div style={{ fontSize: 15, fontWeight: 500, color: "#9BA1B7", marginBottom: 6 }}>{title}</div>
-    {subtitle && <div style={{ fontSize: 12, color: "#636985" }}>{subtitle}</div>}
+    <div style={{ fontSize: 36, marginBottom: 14, opacity: 0.25, filter: "grayscale(1)" }}>{icon || "○"}</div>
+    <div style={{ fontSize: 14, fontWeight: 500, color: T.text2, marginBottom: 6 }}>{title}</div>
+    {subtitle && <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6 }}>{subtitle}</div>}
   </div>
 );
 
 const SearchBar = ({ value, onChange, placeholder }) => (
   <div style={S.search}>
-    <span style={{ color: "#636985", fontSize: 14 }}>⌕</span>
+    <span style={{ color: T.text3, fontSize: 15 }}>⌕</span>
     <input style={S.searchInput} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder || "Rechercher..."} />
-    {value && <span style={{ color: "#636985", fontSize: 12, cursor: "pointer" }} onClick={() => onChange("")}>✕</span>}
+    {value && <span style={{ color: T.text3, fontSize: 11, cursor: "pointer", fontFamily: T.mono }} onClick={() => onChange("")}>✕</span>}
   </div>
 );
 
-// ── CSS keyframes (injected once) ──
+// ── Runtime style overrides (colors that need !important over third-party resets) ──
 // eslint-disable-next-line no-unused-vars
 const _injectStyles = typeof document !== "undefined" && (() => {
   const el = document.createElement("style");
   el.textContent = `
-    html, body, #root {
-      background: #0F1117 \!important;
-    }
+    html, body, #root { background: #060A10 \!important; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @media (max-width: 1024px) {
-      .eos-card-grid { grid-template-columns: repeat(2, 1fr) \!important; }
-      .eos-stat-grid { grid-template-columns: repeat(2, 1fr) \!important; }
-      body { overflow-x: hidden \!important; }
-    }
-    @media (max-width: 768px) {
-      .eos-sidebar { transform: translateX(-260px) \!important; }
-      .eos-sidebar.open { transform: translateX(0) \!important; }
-      .eos-main { margin-left: 0 \!important; }
-      .eos-topbar { padding: 0 16px \!important; }
-      .eos-content { padding: 16px \!important; overflow-x: hidden \!important; }
-      .eos-super-grid { grid-template-columns: 1fr \!important; }
-      .eos-plan-grid { grid-template-columns: 1fr \!important; }
-      .eos-card-grid { grid-template-columns: 1fr \!important; }
-      .eos-stat-grid { grid-template-columns: 1fr \!important; }
-      .eos-table { display: block \!important; overflow-x: auto \!important; }
-      .eos-table table { width: 100% \!important; }
-      .eos-modal-card { width: 95% \!important; max-height: 90vh \!important; }
-      body { overflow-x: hidden \!important; }
-      * { max-width: 100% \!important; }
-    }
-    @media (max-width: 480px) {
-      .eos-topbar { padding: 0 12px \!important; height: 56px \!important; }
-      .eos-content { padding: 12px \!important; }
-      .eos-plan-grid { grid-template-columns: 1fr \!important; }
-      .eos-card { padding: 16px \!important; width: 100% \!important; max-width: 100% \!important; }
-      input, button, select, textarea { font-size: 16px \!important; }
-      .eos-modal-card { padding: 20px 16px \!important; }
-      body { overflow-x: hidden \!important; }
-    }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .eos-animate { animation: fadeUp 0.22s ease both; }
   `;
   document.head.appendChild(el);
   return el;
@@ -840,7 +853,7 @@ export default function App() {
       <div style={{ ...S.page, ...S.center }}>
         <div style={{ textAlign: "center" }}>
           <div style={S.spinner} />
-          <div style={{ marginTop: 16, color: "#636985", fontSize: 13 }}>Chargement...</div>
+          <div style={{ marginTop: 16, color: T.text3, fontSize: 13 }}>Chargement...</div>
         </div>
       </div>
     );
@@ -853,24 +866,24 @@ export default function App() {
       <div style={{ ...S.page, ...S.center }}>
         <div style={S.card}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 14, background: "linear-gradient(135deg,#6C5CE7,#a29bfe)", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 26, color: "#fff" }}>É</div>
-            <h1 style={{ fontSize: 24, marginBottom: 4 }}>ÉcoleOS</h1>
-            <div style={{ fontSize: 14, color: "#636985" }}>Activation de la licence</div>
+            <div style={{ width: 52, height: 52, borderRadius: 13, background: T.accentDim, border: `1px solid ${T.accentGlow}`, margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 22, color: T.accent, fontFamily: T.mono }}>É</div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, letterSpacing: -0.5 }}>ÉcoleOS</h1>
+            <div style={{ fontSize: 13, color: T.text3, letterSpacing: 0.3 }}>Activation de la licence</div>
           </div>
           {licenseErr && <div style={S.err}>{licenseErr}</div>}
           <div style={{ marginBottom: 16 }}>
             <div style={S.label}>Clé de Licence</div>
             <input
-              style={{ ...S.input, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600, textAlign: "center", fontSize: 14, fontFamily: "monospace" }}
+              style={{ ...S.input, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500, textAlign: "center", fontSize: 13, fontFamily: T.mono }}
               value={licenseKey}
               onChange={e => { setLicenseKey(e.target.value); setLicenseErr(""); }}
-              placeholder="ECOLEOS-XXXX-XXXX-XXXX-XXXX-XXXX"
+              placeholder="ECOLEOS-XXXX-XXXX-XXXX"
               onKeyDown={enterLicense}
             />
           </div>
-          <Btn full onClick={doActivateLicense} loading={loading}>Activer</Btn>
-          <div style={{ marginTop: 16, textAlign: "center", fontSize: 11, color: "#636985" }}>
-            Contactez votre fournisseur pour obtenir une clé de licence.
+          <Btn full onClick={doActivateLicense} loading={loading}>Activer la licence</Btn>
+          <div style={{ marginTop: 14, textAlign: "center", fontSize: 11, color: T.text3, letterSpacing: 0.3 }}>
+            Contactez votre fournisseur pour obtenir une clé.
           </div>
         </div>
       </div>
@@ -882,12 +895,12 @@ export default function App() {
     return (
       <div style={{ ...S.page, ...S.center }}>
         <div style={{ ...S.card, width: 520, textAlign: "center" }}>
-          <div style={{ width: 64, height: 64, borderRadius: 50, background: "rgba(255,107,107,0.12)", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🔒</div>
-          <h1 style={{ color: "#FF6B6B", marginBottom: 8 }}>Licence Expirée</h1>
-          <p style={{ color: "#9BA1B7", lineHeight: 1.6, marginBottom: 8 }}>
+          <div style={{ width: 60, height: 60, borderRadius: 14, background: T.dangerDim, border: `1px solid rgba(255,69,96,0.2)`, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🔒</div>
+          <h1 style={{ color: T.danger, marginBottom: 8, fontSize: 20, fontWeight: 700 }}>Licence Expirée</h1>
+          <p style={{ color: T.text2, lineHeight: 1.7, marginBottom: 8, fontSize: 14 }}>
             Votre abonnement ÉcoleOS a expiré{licenseInfo?.expiry ? ` le ${licenseInfo.expiry}` : ""}.
           </p>
-          <p style={{ color: "#636985", fontSize: 13, marginBottom: 24 }}>
+          <p style={{ color: T.text3, fontSize: 12, marginBottom: 24, lineHeight: 1.6 }}>
             La période de grâce de 7 jours est terminée. Contactez votre fournisseur pour renouveler.
           </p>
           <Btn variant="ghost" full onClick={() => { setStep("license"); setLicenseKey(""); setLicenseErr(""); }}>Entrer une nouvelle clé</Btn>
@@ -903,31 +916,31 @@ export default function App() {
       <div style={{ ...S.page, ...S.center }}>
         <div style={S.card}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 14, background: "linear-gradient(135deg,#6C5CE7,#a29bfe)", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 26, color: "#fff" }}>É</div>
-            <h1 style={{ fontSize: 24, marginBottom: 4 }}>ÉcoleOS</h1>
-            <div style={{ fontSize: 14, color: "#636985" }}>Plateforme de gestion scolaire</div>
+            <div style={{ width: 52, height: 52, borderRadius: 13, background: T.accentDim, border: `1px solid ${T.accentGlow}`, margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 22, color: T.accent, fontFamily: T.mono }}>É</div>
+            <h1 style={{ fontSize: 21, fontWeight: 700, marginBottom: 4, letterSpacing: -0.5 }}>ÉcoleOS</h1>
+            <div style={{ fontSize: 12, color: T.text3, letterSpacing: 0.5, textTransform: "uppercase" }}>Gestion scolaire</div>
           </div>
           {err && <div style={S.err}>{err}</div>}
-          <Field label="Code Établissement" value={code} onChange={v => { setCode(v.toUpperCase()); setErr(""); }} placeholder="Ex : LMB" style={{ textTransform: "uppercase", letterSpacing: 2, fontWeight: 600, textAlign: "center", fontSize: 16 }} onKeyDown={enterLogin} />
+          <Field label="Code Établissement" value={code} onChange={v => { setCode(v.toUpperCase()); setErr(""); }} placeholder="Ex : LMB" style={{ textTransform: "uppercase", letterSpacing: 3, fontWeight: 600, textAlign: "center", fontFamily: T.mono }} onKeyDown={enterLogin} />
           <Field label="Identifiant" value={uid} onChange={v => { setUid(v); setErr(""); }} placeholder="Votre identifiant" onKeyDown={enterLogin} />
           <div style={{ marginBottom: 16 }}>
             <div style={S.label}>Mot de passe</div>
-            <input style={S.input} type="password" value={pwd} onChange={e => { setPwd(e.target.value); setErr(""); }} placeholder="••••••" onKeyDown={enterLogin} />
+            <input style={S.input} type="password" value={pwd} onChange={e => { setPwd(e.target.value); setErr(""); }} placeholder="••••••••" onKeyDown={enterLogin} />
           </div>
           <Btn full onClick={doLogin} loading={loading}>Se Connecter</Btn>
-          <div style={{ marginTop: 24, borderTop: "1px solid #2A2E42", paddingTop: 14 }}>
+          <div style={{ marginTop: 22, borderTop: `1px solid ${T.border}`, paddingTop: 14 }}>
             {!superMode ? (
               <div style={{ textAlign: "center" }}>
-                <span style={{ fontSize: 11, color: "#636985", cursor: "pointer", opacity: 0.6 }} onClick={() => setSuperMode(true)}>Administration plateforme</span>
+                <span style={{ fontSize: 11, color: T.text3, cursor: "pointer", letterSpacing: 0.5 }} onClick={() => setSuperMode(true)}>Administration plateforme</span>
               </div>
             ) : (
-              <div style={{ padding: 14, background: "#1C1F2E", borderRadius: 8, border: "1px solid #2A2E42" }}>
+              <div style={{ padding: 14, background: T.surface2, borderRadius: 8, border: `1px solid ${T.border}` }}>
                 {superErr && <div style={S.err}>{superErr}</div>}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <Field label="Identifiant" value={su} onChange={setSu} />
                   <div style={{ marginBottom: 16 }}>
                     <div style={S.label}>Mot de passe</div>
-                    <input style={S.input} type="password" value={sp} onChange={e => setSp(e.target.value)} placeholder="••••••" onKeyDown={e => { if (e.key === "Enter") doSuper(); }} />
+                    <input style={S.input} type="password" value={sp} onChange={e => setSp(e.target.value)} placeholder="••••••••" onKeyDown={e => { if (e.key === "Enter") doSuper(); }} />
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
@@ -948,8 +961,8 @@ export default function App() {
       <div style={{ ...S.page, ...S.center }}>
         <div style={{ ...S.card, width: 520, textAlign: "center" }}>
           <div style={{ width: 64, height: 64, borderRadius: 50, background: "rgba(255,107,107,0.12)", margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🔒</div>
-          <h1 style={{ color: "#FF6B6B", marginBottom: 8 }}>Abonnement Expiré</h1>
-          <p style={{ color: "#9BA1B7", lineHeight: 1.6, marginBottom: 24 }}>L'abonnement de <strong>{school?.name}</strong> a expiré. Contactez l'administrateur de la plateforme pour renouveler.</p>
+          <h1 style={{ color: T.danger, marginBottom: 8 }}>Abonnement Expiré</h1>
+          <p style={{ color: T.text2, lineHeight: 1.6, marginBottom: 24 }}>L'abonnement de <strong>{school?.name}</strong> a expiré. Contactez l'administrateur de la plateforme pour renouveler.</p>
           <Btn variant="ghost" full onClick={logout}>← Retour</Btn>
         </div>
       </div>
@@ -1031,8 +1044,8 @@ export default function App() {
     const tabStyle = (isActive) => ({
       padding: "10px 20px", cursor: "pointer", fontSize: 14, fontWeight: 600,
       borderTop: "none", borderLeft: "none", borderRight: "none",
-      borderBottomWidth: 2, borderBottomStyle: "solid", borderBottomColor: isActive ? "#6C5CE7" : "transparent",
-      color: isActive ? "#A29BFE" : "#636985", background: "transparent",
+      borderBottomWidth: 2, borderBottomStyle: "solid", borderBottomColor: isActive ? T.accent : "transparent",
+      color: isActive ? T.accent : T.text3, background: "transparent",
     });
 
     return (
@@ -1041,16 +1054,16 @@ export default function App() {
           <div>
             <Btn variant="ghost" small onClick={() => { setStep("login"); setSearch(""); setSuperFinPage("schools"); }}>← Retour</Btn>
             <h1 style={{ fontSize: 24, marginTop: 8 }}>Super Administration</h1>
-            <div style={{ fontSize: 13, color: "#636985" }}>Gestion des abonnements et établissements</div>
+            <div style={{ fontSize: 13, color: T.text3 }}>Gestion des abonnements et établissements</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {saving && <div style={S.spinner} />}
-            <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#FF6B6B", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>SA</div>
+            <div style={{ width: 42, height: 42, borderRadius: "50%", background: T.danger, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>SA</div>
           </div>
         </div>
 
         {/* Tab navigation */}
-        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #2A2E42", marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${T.border}`, marginBottom: 24 }}>
           <button style={tabStyle(superFinPage === "schools")} onClick={() => { setSuperFinPage("schools"); setSearch(""); }}>Établissements</button>
           <button style={tabStyle(superFinPage === "finances")} onClick={() => { setSuperFinPage("finances"); setSearch(""); }}>Finances Plateforme</button>
           <button style={tabStyle(superFinPage === "licences")} onClick={() => { setSuperFinPage("licences"); setSearch(""); }}>Licences</button>
@@ -1059,13 +1072,13 @@ export default function App() {
         {/* ── Schools Tab ── */}
         {superFinPage === "schools" && (<>
           <div className="eos-super-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
-            <div style={S.stat}><div style={S.label}>Établissements</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{schools.length}</div><div style={{ fontSize: 12, color: "#9BA1B7", marginTop: 4 }}>{active} actifs</div></div>
-            <div style={S.stat}><div style={S.label}>Revenu Mensuel</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{fmtCFA(revenue)}</div></div>
-            <div style={S.stat}><div style={S.label}>Expirés / Suspendus</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: "#FF6B6B" }}>{schools.length - active}</div></div>
+            <div style={S.stat}><div style={S.label}>Établissements</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{schools.length}</div><div style={{ fontSize: 12, color: T.text2, marginTop: 4 }}>{active} actifs</div></div>
+            <div style={S.stat}><div style={S.label}>Revenu Mensuel</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.accent }}>{fmtCFA(revenue)}</div></div>
+            <div style={S.stat}><div style={S.label}>Expirés / Suspendus</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: T.danger }}>{schools.length - active}</div></div>
           </div>
 
-          <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #2A2E42", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${T.border}`, flexWrap: "wrap", gap: 12 }}>
               <SearchBar value={search} onChange={setSearch} placeholder="Rechercher un établissement..." />
               <Btn onClick={() => { setCf({ name: "", city: "", code: "", adminUser: "admin", adminPass: "", plan: "essai" }); setCreateMode(true); setCErr(""); }}>+ Nouvel Établissement</Btn>
             </div>
@@ -1081,7 +1094,7 @@ export default function App() {
                     const badgeText = s.subStatus === "suspendu" ? "Suspendu" : dl <= 0 ? "Expiré" : dl <= 7 ? dl + "j restants" : "Actif (" + dl + "j)";
                     return (
                       <tr key={s.id}>
-                        <td style={{ ...S.td, fontWeight: 500, color: "#E8EAF0" }}>{s.name}<div style={{ fontSize: 11, color: "#636985" }}>{s.city}</div></td>
+                        <td style={{ ...S.td, fontWeight: 500, color: T.text }}>{s.name}<div style={{ fontSize: 11, color: T.text3 }}>{s.city}</div></td>
                         <td style={{ ...S.td, fontFamily: "monospace", fontWeight: 600 }}>{s.code}</td>
                         <td style={S.td}><span style={S.badge("purple")}>{p?.name || "—"}</span></td>
                         <td style={{ ...S.td, fontWeight: 600 }}>{fmtCFA(p?.price || 0)}</td>
@@ -1123,7 +1136,7 @@ export default function App() {
                   {Object.entries(PLANS).map(([k, v]) => <option key={k} value={k}>{v.name} — {v.price === 0 ? "Gratuit" : fmtCFA(v.price)}</option>)}
                 </select>
               </div>
-              <div style={{ borderTop: "1px solid #2A2E42", paddingTop: 12, marginTop: 8 }}>
+              <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 }}>
                 <div style={{ ...S.label, marginBottom: 10 }}>Compte Admin de l'école</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <Field label="Identifiant" value={cf.adminUser} onChange={v => setCf({ ...cf, adminUser: v })} />
@@ -1140,32 +1153,32 @@ export default function App() {
           <div className="eos-super-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 28 }}>
             <div style={S.stat}>
               <div style={S.label}>Revenu Attendu / mois</div>
-              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#A29BFE" }}>{fmtCFA(revenue)}</div>
-              <div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{schools.filter(s => PLANS[s.plan]?.price > 0).length} abonnements payants</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.accent }}>{fmtCFA(revenue)}</div>
+              <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{schools.filter(s => PLANS[s.plan]?.price > 0).length} abonnements payants</div>
             </div>
             <div style={S.stat}>
               <div style={S.label}>Encaissé ce mois</div>
-              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{fmtCFA(monthCollected)}</div>
-              <div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{superPayments.filter(p => p.date?.startsWith(thisMonth)).length} paiements</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.accent }}>{fmtCFA(monthCollected)}</div>
+              <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{superPayments.filter(p => p.date?.startsWith(thisMonth)).length} paiements</div>
             </div>
             <div style={S.stat}>
               <div style={S.label}>Total Encaissé</div>
-              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{fmtCFA(totalCollected)}</div>
-              <div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{superPayments.length} paiements total</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.accent }}>{fmtCFA(totalCollected)}</div>
+              <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{superPayments.length} paiements total</div>
             </div>
             <div style={S.stat}>
               <div style={S.label}>Impayés ce mois</div>
-              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: unpaidSchools.length > 0 ? "#FF6B6B" : "#00B894" }}>{unpaidSchools.length}</div>
-              <div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{unpaidSchools.length > 0 ? unpaidSchools.map(s => s.code).join(", ") : "Tous à jour"}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: unpaidSchools.length > 0 ? T.danger : T.accent }}>{unpaidSchools.length}</div>
+              <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{unpaidSchools.length > 0 ? unpaidSchools.map(s => s.code).join(", ") : "Tous à jour"}</div>
             </div>
           </div>
 
           {/* Revenue per school breakdown */}
-          <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 28 }}>
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Revenus par Établissement</h3></div>
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 28 }}>
+            <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Revenus par Établissement</h3></div>
             <div style={{ padding: 20 }}>
               {schools.filter(s => PLANS[s.plan]?.price > 0).length === 0 ? (
-                <div style={{ textAlign: "center", padding: 20, color: "#636985", fontSize: 13 }}>Aucun abonnement payant</div>
+                <div style={{ textAlign: "center", padding: 20, color: T.text3, fontSize: 13 }}>Aucun abonnement payant</div>
               ) : (
                 schools.filter(s => PLANS[s.plan]?.price > 0).map(sc => {
                   const paid = superPayments.filter(p => p.schoolId === sc.id).reduce((a, p) => a + p.amount, 0);
@@ -1173,11 +1186,11 @@ export default function App() {
                   const paidThisMonth = superPayments.some(p => p.schoolId === sc.id && p.date?.startsWith(thisMonth));
                   return (
                     <div key={sc.id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, padding: "8px 0", borderBottom: "1px solid #1C1F2E" }}>
-                      <span style={{ width: 50, fontFamily: "monospace", fontWeight: 600, fontSize: 12, color: "#A29BFE" }}>{sc.code}</span>
-                      <span style={{ flex: 1, fontSize: 13, color: "#E8EAF0" }}>{sc.name}</span>
-                      <span style={{ fontSize: 12, color: "#636985" }}>{fmtCFA(expected)}/mois</span>
+                      <span style={{ width: 50, fontFamily: "monospace", fontWeight: 600, fontSize: 12, color: T.accent }}>{sc.code}</span>
+                      <span style={{ flex: 1, fontSize: 13, color: T.text }}>{sc.name}</span>
+                      <span style={{ fontSize: 12, color: T.text3 }}>{fmtCFA(expected)}/mois</span>
                       <span style={S.badge(paidThisMonth ? "green" : "red")}>{paidThisMonth ? "Payé" : "Impayé"}</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#00B894", minWidth: 100, textAlign: "right" }}>{fmtCFA(paid)} total</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: T.accent, minWidth: 100, textAlign: "right" }}>{fmtCFA(paid)} total</span>
                     </div>
                   );
                 })
@@ -1190,7 +1203,7 @@ export default function App() {
             <SearchBar value={search} onChange={setSearch} placeholder="Rechercher un paiement..." />
             <Btn onClick={() => { setForm({ schoolId: schools[0]?.id || "", amount: "", date: new Date().toISOString().slice(0, 10), period: "mensuel", method: "Virement", note: "" }); setModal("addSuperPay"); }}>+ Enregistrer un Paiement</Btn>
           </div>
-          <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
             <div style={{ overflowX: "auto" }}>
               <table style={S.table}>
                 <thead><tr><th style={S.th}>Date</th><th style={S.th}>École</th><th style={S.th}>Montant</th><th style={S.th}>Période</th><th style={S.th}>Méthode</th><th style={S.th}>Note</th><th style={S.th}>Actions</th></tr></thead>
@@ -1198,11 +1211,11 @@ export default function App() {
                   {[...filteredPayments].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(p => (
                     <tr key={p.id}>
                       <td style={S.td}>{p.date}</td>
-                      <td style={{ ...S.td, fontWeight: 500, color: "#E8EAF0" }}>{p.schoolName} <span style={{ fontFamily: "monospace", fontSize: 11, color: "#636985" }}>{p.schoolCode}</span></td>
-                      <td style={{ ...S.td, fontWeight: 600, color: "#00B894" }}>+{fmtCFA(p.amount)}</td>
+                      <td style={{ ...S.td, fontWeight: 500, color: T.text }}>{p.schoolName} <span style={{ fontFamily: "monospace", fontSize: 11, color: T.text3 }}>{p.schoolCode}</span></td>
+                      <td style={{ ...S.td, fontWeight: 600, color: T.accent }}>+{fmtCFA(p.amount)}</td>
                       <td style={S.td}><span style={S.badge("purple")}>{p.period}</span></td>
                       <td style={S.td}>{p.method}</td>
-                      <td style={{ ...S.td, fontSize: 12, color: "#636985" }}>{p.note || "—"}</td>
+                      <td style={{ ...S.td, fontSize: 12, color: T.text3 }}>{p.note || "—"}</td>
                       <td style={S.td}><Btn variant="danger" small onClick={() => delSuperPayment(p.id)}>Suppr.</Btn></td>
                     </tr>
                   ))}
@@ -1276,7 +1289,7 @@ export default function App() {
           };
           return (
             <div style={{ maxWidth: 560 }}>
-              <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24, marginBottom: 20 }}>
+              <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 24, marginBottom: 20 }}>
                 <h3 style={{ marginBottom: 20, fontSize: 16 }}>Générer une Clé de Licence</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                   <div>
@@ -1312,9 +1325,9 @@ export default function App() {
                 <Btn onClick={generateKey} disabled={!licForm.school.trim()}>Générer la clé</Btn>
               </div>
               {licForm.generated ? (
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 20 }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 20 }}>
                   <div style={S.label}>Clé générée</div>
-                  <div style={{ fontFamily: "monospace", fontSize: 13, color: "#A29BFE", wordBreak: "break-all", padding: "12px 0", letterSpacing: 1 }}>{licForm.generated}</div>
+                  <div style={{ fontFamily: "monospace", fontSize: 13, color: T.accent, wordBreak: "break-all", padding: "12px 0", letterSpacing: 1 }}>{licForm.generated}</div>
                   <Btn variant={licForm.copied ? "ghost" : "primary"} small onClick={() => { navigator.clipboard.writeText(licForm.generated); setLicForm(f => ({ ...f, copied: true })); }}>
                     {licForm.copied ? "Copié ✓" : "Copier"}
                   </Btn>
@@ -1494,14 +1507,14 @@ export default function App() {
 
         {/* Sidebar */}
         <aside className={`eos-sidebar${sidebarOpen ? " open" : ""}`} style={{ ...S.sidebar, ...(isMobile && !sidebarOpen ? S.sidebarHidden : {}) }}>
-          <div style={{ padding: 20, borderBottom: "1px solid #2A2E42", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg,#6C5CE7,#a29bfe)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, color: "#fff" }}>{(school?.code || "ÉO").slice(0, 2)}</div>
+          <div style={{ padding: 20, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 9, background: T.accentDim, border: `1px solid ${T.accentGlow}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: T.accent, fontFamily: T.mono }}>{(school?.code || "ÉO").slice(0, 2)}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{school?.name || "—"}</div>
-              <div style={{ fontSize: 11, color: "#636985" }}>{school?.city || ""} · {PLANS[school?.plan]?.name || "—"}</div>
+              <div style={{ fontSize: 11, color: T.text3 }}>{school?.city || ""} · {PLANS[school?.plan]?.name || "—"}</div>
             </div>
           </div>
-          {dl <= 7 && dl > 0 && <div style={{ padding: "8px 16px", background: "rgba(253,203,110,0.12)", fontSize: 11, color: "#FDCB6E", textAlign: "center", borderBottom: "1px solid rgba(253,203,110,0.2)" }}>Expire dans {dl}j</div>}
+          {dl <= 7 && dl > 0 && <div style={{ padding: "8px 16px", background: "rgba(253,203,110,0.12)", fontSize: 11, color: T.amber, textAlign: "center", borderBottom: "1px solid rgba(253,203,110,0.2)" }}>Expire dans {dl}j</div>}
           <nav style={{ flex: 1, padding: "16px 12px", overflow: "auto" }}>
             {visiblePages.map(p => (
               <div key={p.k} style={S.navItem(page === p.k)} onClick={() => { setPage(p.k); setSearch(""); if (isMobile) closeSidebar(); }}>
@@ -1510,9 +1523,9 @@ export default function App() {
               </div>
             ))}
           </nav>
-          <div style={{ padding: "12px 20px", borderTop: "1px solid #2A2E42" }}>
+          <div style={{ padding: "12px 20px", borderTop: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>{user?.name}</div>
-            <div style={{ fontSize: 11, color: "#636985", marginBottom: 8 }}>{ROLES[role] || role}</div>
+            <div style={{ fontSize: 11, color: T.text3, marginBottom: 8 }}>{ROLES[role] || role}</div>
             <Btn variant="ghost" full small onClick={logout}>Déconnexion</Btn>
           </div>
         </aside>
@@ -1525,7 +1538,7 @@ export default function App() {
             {saving && <div style={S.spinner} />}
             {/* Connection status */}
             <div
-              style={{ display: "flex", alignItems: "center", gap: 6, cursor: role === "admin" ? "pointer" : "default", fontSize: 11, color: "#636985" }}
+              style={{ display: "flex", alignItems: "center", gap: 6, cursor: role === "admin" ? "pointer" : "default", fontSize: 11, color: T.text3 }}
               onClick={() => {
                 if (role !== "admin") return;
                 setForm({ serverUrl: connConfig.serverUrl || "", mode: connConfig.mode || "offline", testResult: null });
@@ -1533,7 +1546,7 @@ export default function App() {
               }}
               title={connStatus === "connected" ? "Connecté au serveur" : connStatus === "syncing" ? "Synchronisation..." : connStatus === "error" ? "Serveur injoignable" : "Hors ligne"}
             >
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: connStatus === "connected" ? "#00B894" : connStatus === "syncing" ? "#FDCB6E" : connStatus === "error" ? "#FF6B6B" : "#636985" }} />
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: connStatus === "connected" ? T.accent : connStatus === "syncing" ? T.amber : connStatus === "error" ? T.danger : T.text3 }} />
               {connConfig.mode !== "offline" && <span>{connStatus === "connected" ? "En ligne" : connStatus === "syncing" ? "Sync..." : connStatus === "error" ? "Déconnecté" : ""}</span>}
             </div>
             {role === "admin" && (
@@ -1548,7 +1561,7 @@ export default function App() {
             )}
           </header>
           {licenseGrace && (
-            <div style={{ padding: "8px 32px", background: "rgba(253,203,110,0.12)", fontSize: 13, color: "#FDCB6E", textAlign: "center", borderBottom: "1px solid rgba(253,203,110,0.2)" }}>
+            <div style={{ padding: "8px 32px", background: "rgba(253,203,110,0.12)", fontSize: 13, color: T.amber, textAlign: "center", borderBottom: "1px solid rgba(253,203,110,0.2)" }}>
               Votre licence expire bientôt — {licenseGrace} jour{licenseGrace > 1 ? "s" : ""} de grâce restant{licenseGrace > 1 ? "s" : ""}. Contactez votre fournisseur pour renouveler.
             </div>
           )}
@@ -1564,24 +1577,24 @@ export default function App() {
                   <div>
                     {/* Stats Grid */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
-                      <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{students.length} total</div></div>
-                      <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{staff.length} total</div></div>
-                      <div style={S.stat}><div style={S.label}>Forfait</div><div style={{ fontSize: 20, fontWeight: 700, marginTop: 8, color: "#A29BFE" }}>{PLANS[school?.plan]?.name || "—"}</div></div>
-                      <div style={S.stat}><div style={S.label}>Jours restants</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: dl <= 7 ? "#FDCB6E" : "#00B894" }}>{dl}</div></div>
+                      <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{students.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{staff.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Forfait</div><div style={{ fontSize: 20, fontWeight: 700, marginTop: 8, color: T.accent }}>{PLANS[school?.plan]?.name || "—"}</div></div>
+                      <div style={S.stat}><div style={S.label}>Jours restants</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: dl <= 7 ? T.amber : T.accent }}>{dl}</div></div>
                     </div>
 
                     {/* Grade Distribution Chart */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Répartition par Niveau</h3></div>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Répartition par Niveau</h3></div>
                       <div style={{ padding: 20 }}>
                         {NIV.map(n => {
                           const c = students.filter(s => s.grade === n && s.status === "actif").length;
                           const max = Math.max(...NIV.map(nn => students.filter(s => s.grade === nn && s.status === "actif").length), 1);
                           return (
                             <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                              <span style={{ width: 90, fontSize: 13, color: "#9BA1B7" }}>{n}</span>
-                              <div style={{ flex: 1, height: 24, background: "#1C1F2E", borderRadius: 4, overflow: "hidden" }}>
-                                <div style={{ width: `${(c / max) * 100}%`, height: "100%", background: "linear-gradient(90deg,#6C5CE7,#A29BFE)", borderRadius: 4, transition: "width 0.3s ease" }} />
+                              <span style={{ width: 90, fontSize: 13, color: T.text2 }}>{n}</span>
+                              <div style={{ flex: 1, height: 24, background: T.surface2, borderRadius: 4, overflow: "hidden" }}>
+                                <div style={{ width: `${(c / max) * 100}%`, height: "100%", background: `linear-gradient(90deg,${T.accent},${T.accentGlow})`, borderRadius: 4, transition: "width 0.3s ease" }} />
                               </div>
                               <span style={{ width: 28, fontSize: 13, fontWeight: 600, textAlign: "right" }}>{c}</span>
                             </div>
@@ -1591,8 +1604,8 @@ export default function App() {
                     </div>
 
                     {/* Data Management */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
                         <h3>Données de l'établissement</h3>
                       </div>
                       <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -1605,26 +1618,26 @@ export default function App() {
                     </div>
 
                     {/* Budget Summary */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20, cursor: "pointer" }} onClick={() => { setPage("budget"); setSearch(""); }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20, cursor: "pointer" }} onClick={() => { setPage("budget"); setSearch(""); }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <h3>Budget {new Date().getFullYear()}</h3>
-                        <span style={{ fontSize: 12, color: "#636985" }}>Voir détails →</span>
+                        <span style={{ fontSize: 12, color: T.text3 }}>Voir détails →</span>
                       </div>
                       <div style={{ padding: 20, display: "flex", gap: 20, flexWrap: "wrap" }}>
                         <div>
-                          <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5 }}>Dépenses réelles / prévues</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4, color: budgetData.actualExpense <= budgetData.plannedExpense || budgetData.plannedExpense === 0 ? "#00B894" : "#FF6B6B" }}>
+                          <div style={{ fontSize: 11, color: T.text3, textTransform: "uppercase", letterSpacing: 0.5 }}>Dépenses réelles / prévues</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4, color: budgetData.actualExpense <= budgetData.plannedExpense || budgetData.plannedExpense === 0 ? T.accent : T.danger }}>
                             {budgetData.plannedExpense > 0 ? Math.round((budgetData.actualExpense / budgetData.plannedExpense) * 100) + "%" : "—"}
                           </div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5 }}>Catégories en dépassement</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4, color: budgetData.overBudgetItems.length > 0 ? "#FF6B6B" : "#00B894" }}>
+                          <div style={{ fontSize: 11, color: T.text3, textTransform: "uppercase", letterSpacing: 0.5 }}>Catégories en dépassement</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4, color: budgetData.overBudgetItems.length > 0 ? T.danger : T.accent }}>
                             {budgetData.overBudgetItems.length}
                           </div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", letterSpacing: 0.5 }}>Statut</div>
+                          <div style={{ fontSize: 11, color: T.text3, textTransform: "uppercase", letterSpacing: 0.5 }}>Statut</div>
                           <div style={{ marginTop: 6 }}>
                             <span style={S.badge(budgetData.overBudgetItems.length > 0 ? "red" : "green")}>
                               {budgetData.overBudgetItems.length > 0 ? "Dépassement" : budgetData.plannedExpense > 0 ? "En bonne voie" : "Non défini"}
@@ -1635,8 +1648,8 @@ export default function App() {
                     </div>
 
                     {/* Quick Links */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
                         <h3>Accès rapide</h3>
                       </div>
                       <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -1666,23 +1679,23 @@ export default function App() {
                   <div>
                     {/* Stats */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
-                      <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{students.length} total</div></div>
-                      <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{staff.length} total</div></div>
-                      <div style={S.stat}><div style={S.label}>Présents aujourd'hui</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{presentToday}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{absentToday} absents</div></div>
+                      <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{students.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{staff.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Présents aujourd'hui</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: T.accent }}>{presentToday}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{absentToday} absents</div></div>
                     </div>
 
                     {/* Grade Distribution */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Répartition par Niveau</h3></div>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Répartition par Niveau</h3></div>
                       <div style={{ padding: 20 }}>
                         {NIV.map(n => {
                           const c = students.filter(s => s.grade === n && s.status === "actif").length;
                           const max = Math.max(...NIV.map(nn => students.filter(s => s.grade === nn && s.status === "actif").length), 1);
                           return (
                             <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                              <span style={{ width: 90, fontSize: 13, color: "#9BA1B7" }}>{n}</span>
-                              <div style={{ flex: 1, height: 24, background: "#1C1F2E", borderRadius: 4, overflow: "hidden" }}>
-                                <div style={{ width: `${(c / max) * 100}%`, height: "100%", background: "linear-gradient(90deg,#6C5CE7,#A29BFE)", borderRadius: 4, transition: "width 0.3s ease" }} />
+                              <span style={{ width: 90, fontSize: 13, color: T.text2 }}>{n}</span>
+                              <div style={{ flex: 1, height: 24, background: T.surface2, borderRadius: 4, overflow: "hidden" }}>
+                                <div style={{ width: `${(c / max) * 100}%`, height: "100%", background: `linear-gradient(90deg,${T.accent},${T.accentGlow})`, borderRadius: 4, transition: "width 0.3s ease" }} />
                               </div>
                               <span style={{ width: 28, fontSize: 13, fontWeight: 600, textAlign: "right" }}>{c}</span>
                             </div>
@@ -1692,22 +1705,22 @@ export default function App() {
                     </div>
 
                     {/* Recent Discipline Incidents */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <h3>Incidents récents</h3>
-                        <span style={{ fontSize: 12, color: "#636985" }}>Aujourd'hui: {todayIncidents.length}</span>
+                        <span style={{ fontSize: 12, color: T.text3 }}>Aujourd'hui: {todayIncidents.length}</span>
                       </div>
                       <div style={{ padding: 20 }}>
                         {todayIncidents.length === 0 ? (
-                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucun incident aujourd'hui</div>
+                          <div style={{ textAlign: "center", padding: "20px", color: T.text3, fontSize: 13 }}>Aucun incident aujourd'hui</div>
                         ) : (
                           todayIncidents.map(inc => {
                             const student = students.find(s => s.id === inc.studentId);
                             return (
                               <div key={inc.id} style={{ padding: "12px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <div>
-                                  <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>{student?.name || "Élève"}</div>
-                                  <div style={{ fontSize: 11, color: "#636985", marginTop: 2 }}>{inc.type}</div>
+                                  <div style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{student?.name || "Élève"}</div>
+                                  <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>{inc.type}</div>
                                 </div>
                                 <span style={S.badge("red")}>{inc.sanction || "—"}</span>
                               </div>
@@ -1718,8 +1731,8 @@ export default function App() {
                     </div>
 
                     {/* Quick Links */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
                         <h3>Accès rapide</h3>
                       </div>
                       <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -1744,27 +1757,27 @@ export default function App() {
                   <div>
                     {/* Stats */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
-                      <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{newEnrollmentsThisMonth} inscriptions cette année</div></div>
-                      <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{staff.length} total</div></div>
-                      <div style={S.stat}><div style={S.label}>Classes</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{classes.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{students.filter(s => s.status === "actif").length} élèves</div></div>
+                      <div style={S.stat}><div style={S.label}>Élèves</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{students.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{newEnrollmentsThisMonth} inscriptions cette année</div></div>
+                      <div style={S.stat}><div style={S.label}>Personnel</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{staff.filter(s => s.status === "actif").length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{staff.length} total</div></div>
+                      <div style={S.stat}><div style={S.label}>Classes</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{classes.length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{students.filter(s => s.status === "actif").length} élèves</div></div>
                     </div>
 
                     {/* Classes Overview */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Aperçu des Classes</h3></div>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Aperçu des Classes</h3></div>
                       <div style={{ padding: 20 }}>
                         {classes.length === 0 ? (
-                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucune classe créée</div>
+                          <div style={{ textAlign: "center", padding: "20px", color: T.text3, fontSize: 13 }}>Aucune classe créée</div>
                         ) : (
                           classes.slice(0, 8).map(c => {
                             const studentCount = students.filter(s => s.classId === c.id && s.status === "actif").length;
                             return (
                               <div key={c.id} style={{ padding: "10px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: T.text }}>
                                   {c.name}
-                                  {c.section && <span style={{ fontSize: 11, color: "#636985", marginLeft: 8 }}>({c.section})</span>}
+                                  {c.section && <span style={{ fontSize: 11, color: T.text3, marginLeft: 8 }}>({c.section})</span>}
                                 </div>
-                                <span style={{ fontSize: 13, fontWeight: 600, color: "#A29BFE" }}>{studentCount} élèves</span>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>{studentCount} élèves</span>
                               </div>
                             );
                           })
@@ -1773,8 +1786,8 @@ export default function App() {
                     </div>
 
                     {/* Quick Links */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
                         <h3>Accès rapide</h3>
                       </div>
                       <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -1801,28 +1814,28 @@ export default function App() {
                   <div>
                     {/* Stats */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
-                      <div style={S.stat}><div style={S.label}>Mes Classes</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{userClasses.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>Emploi du temps</div></div>
-                      <div style={S.stat}><div style={S.label}>Présences aujourd'hui</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{todayAttendance.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>Élèves marqués</div></div>
-                      <div style={S.stat}><div style={S.label}>Notes entrées</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{recentGrades.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>Récemment</div></div>
+                      <div style={S.stat}><div style={S.label}>Mes Classes</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{userClasses.length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>Emploi du temps</div></div>
+                      <div style={S.stat}><div style={S.label}>Présences aujourd'hui</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: T.accent }}>{todayAttendance.length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>Élèves marqués</div></div>
+                      <div style={S.stat}><div style={S.label}>Notes entrées</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{recentGrades.length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>Récemment</div></div>
                     </div>
 
                     {/* My Classes */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Mes Classes</h3></div>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Mes Classes</h3></div>
                       <div style={{ padding: 20 }}>
                         {userClasses.length === 0 ? (
-                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucune classe assignée</div>
+                          <div style={{ textAlign: "center", padding: "20px", color: T.text3, fontSize: 13 }}>Aucune classe assignée</div>
                         ) : (
                           userClasses.map(classId => {
                             const cls = classes.find(c => c.id === classId);
                             const studentCount = students.filter(s => s.classId === classId && s.status === "actif").length;
                             return (
                               <div key={classId} style={{ padding: "10px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: T.text }}>
                                   {cls?.name || "Classe"}
-                                  {cls?.section && <span style={{ fontSize: 11, color: "#636985", marginLeft: 8 }}>({cls.section})</span>}
+                                  {cls?.section && <span style={{ fontSize: 11, color: T.text3, marginLeft: 8 }}>({cls.section})</span>}
                                 </div>
-                                <span style={{ fontSize: 13, fontWeight: 600, color: "#A29BFE" }}>{studentCount} élèves</span>
+                                <span style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>{studentCount} élèves</span>
                               </div>
                             );
                           })
@@ -1831,21 +1844,21 @@ export default function App() {
                     </div>
 
                     {/* Recent Grades */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Notes récentes</h3></div>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Notes récentes</h3></div>
                       <div style={{ padding: 20 }}>
                         {recentGrades.length === 0 ? (
-                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucune note entrée</div>
+                          <div style={{ textAlign: "center", padding: "20px", color: T.text3, fontSize: 13 }}>Aucune note entrée</div>
                         ) : (
                           recentGrades.map(g => {
                             const student = students.find(s => s.id === g.studentId);
                             return (
                               <div key={g.id} style={{ padding: "10px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <div>
-                                  <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>{student?.name || "Élève"}</div>
-                                  <div style={{ fontSize: 11, color: "#636985", marginTop: 2 }}>{g.subject || "Sujet"}</div>
+                                  <div style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{student?.name || "Élève"}</div>
+                                  <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>{g.subject || "Sujet"}</div>
                                 </div>
-                                <span style={{ fontSize: 14, fontWeight: 700, color: "#A29BFE" }}>{g.score}/20</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: T.accent }}>{g.score}/20</span>
                               </div>
                             );
                           })
@@ -1854,8 +1867,8 @@ export default function App() {
                     </div>
 
                     {/* Quick Links */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
                         <h3>Accès rapide</h3>
                       </div>
                       <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -1883,16 +1896,16 @@ export default function App() {
                   <div>
                     {/* Financial Overview */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
-                      <div style={S.stat}><div style={S.label}>Revenu Total</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{fmtCFA(totalIncome)}</div></div>
-                      <div style={S.stat}><div style={S.label}>Dépenses Totales</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#FF6B6B" }}>-{fmtCFA(totalExpense)}</div></div>
-                      <div style={S.stat}><div style={S.label}>Solde</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: balance >= 0 ? "#00B894" : "#FF6B6B" }}>{fmtCFA(balance)}</div></div>
-                      <div style={S.stat}><div style={S.label}>Transactions</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{finances.length}</div><div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>Total enregistrées</div></div>
+                      <div style={S.stat}><div style={S.label}>Revenu Total</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.accent }}>{fmtCFA(totalIncome)}</div></div>
+                      <div style={S.stat}><div style={S.label}>Dépenses Totales</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.danger }}>-{fmtCFA(totalExpense)}</div></div>
+                      <div style={S.stat}><div style={S.label}>Solde</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: balance >= 0 ? T.accent : T.danger }}>{fmtCFA(balance)}</div></div>
+                      <div style={S.stat}><div style={S.label}>Transactions</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>{finances.length}</div><div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>Total enregistrées</div></div>
                     </div>
 
                     {/* Budget Summary */}
                     {yearBudgets.length > 0 && (
-                      <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                        <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Exécution du Budget {budgetYear}</h3></div>
+                      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Exécution du Budget {budgetYear}</h3></div>
                         <div style={{ padding: 20 }}>
                           {yearBudgets.slice(0, 5).map(b => {
                             const spent = finances.filter(f => f.category === b.category && f.type === "expense").reduce((a, f) => a + Number(f.amount || 0), 0);
@@ -1901,13 +1914,13 @@ export default function App() {
                             return (
                               <div key={b.id} style={{ marginBottom: 16 }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                                  <span style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>{b.category}</span>
-                                  <span style={{ fontSize: 12, color: isOverBudget ? "#FF6B6B" : "#636985" }}>
+                                  <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{b.category}</span>
+                                  <span style={{ fontSize: 12, color: isOverBudget ? T.danger : T.text3 }}>
                                     {fmtCFA(spent)} / {fmtCFA(b.amount)}
                                   </span>
                                 </div>
-                                <div style={{ height: 8, background: "#1C1F2E", borderRadius: 4, overflow: "hidden" }}>
-                                  <div style={{ height: "100%", width: `${progress}%`, background: isOverBudget ? "#FF6B6B" : "#6C5CE7", transition: "width 0.3s ease" }} />
+                                <div style={{ height: 8, background: T.surface2, borderRadius: 4, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", width: `${progress}%`, background: isOverBudget ? T.danger : T.accent, transition: "width 0.3s ease" }} />
                                 </div>
                               </div>
                             );
@@ -1917,19 +1930,19 @@ export default function App() {
                     )}
 
                     {/* Recent Transactions */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Transactions Récentes</h3></div>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Transactions Récentes</h3></div>
                       <div style={{ padding: 20 }}>
                         {recentTransactions.length === 0 ? (
-                          <div style={{ textAlign: "center", padding: "20px", color: "#636985", fontSize: 13 }}>Aucune transaction</div>
+                          <div style={{ textAlign: "center", padding: "20px", color: T.text3, fontSize: 13 }}>Aucune transaction</div>
                         ) : (
                           recentTransactions.map(t => (
                             <div key={t.id} style={{ padding: "10px 0", borderBottom: "1px solid #1C1F2E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <div>
-                                <div style={{ fontSize: 13, fontWeight: 500, color: "#E8EAF0" }}>{t.category}</div>
-                                <div style={{ fontSize: 11, color: "#636985", marginTop: 2 }}>{t.date || "—"}</div>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{t.category}</div>
+                                <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>{t.date || "—"}</div>
                               </div>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: t.type === "income" ? "#00B894" : "#FF6B6B" }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: t.type === "income" ? T.accent : T.danger }}>
                                 {t.type === "income" ? "+" : "-"}{fmtCFA(Number(t.amount || 0))}
                               </span>
                             </div>
@@ -1939,8 +1952,8 @@ export default function App() {
                     </div>
 
                     {/* Quick Links */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
                         <h3>Accès rapide</h3>
                       </div>
                       <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -1958,9 +1971,9 @@ export default function App() {
               // ══════════════════════════════════════════════════════════════
               return (
                 <div>
-                  <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 32, textAlign: "center" }}>
+                  <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 32, textAlign: "center" }}>
                     <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Bienvenue</div>
-                    <div style={{ color: "#636985", marginBottom: 20 }}>Rôle: {ROLES[role] || role}</div>
+                    <div style={{ color: T.text3, marginBottom: 20 }}>Rôle: {ROLES[role] || role}</div>
                     <Btn onClick={() => { setPage("msg"); setSearch(""); }}>⊛ Annonces</Btn>
                   </div>
                 </div>
@@ -1978,7 +1991,7 @@ export default function App() {
                     <Btn onClick={() => { setForm({ name: "", grade: NIV[0], gender: "", dob: "", birthPlace: "", nationality: "", classId: "", prevSchool: "", enrollYear: String(new Date().getFullYear()), parent: "", parentRel: "", parentPhone: "", parentEmail: "", address: "", bloodType: "", allergies: "", notes: "" }); setModal("addStu"); }}>+ Ajouter un élève</Btn>
                   </div>
                 </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={S.table}>
                       <thead><tr><th style={S.th}>Nom</th><th style={S.th}>Niveau</th><th style={S.th}>Parent</th><th style={S.th}>Paiement</th><th style={S.th}>Statut</th><th style={S.th}>Actions</th></tr></thead>
@@ -1993,7 +2006,7 @@ export default function App() {
                             <td style={S.td}>{s.grade}</td>
                             <td style={S.td}>{s.parent || "—"}</td>
                             <td style={S.td}>
-                              {payBadge ? <span style={S.badge(payBadge.color)}>{payBadge.label}</span> : <span style={{ color: "#636985", fontSize: 12 }}>—</span>}
+                              {payBadge ? <span style={S.badge(payBadge.color)}>{payBadge.label}</span> : <span style={{ color: T.text3, fontSize: 12 }}>—</span>}
                             </td>
                             <td style={S.td}>
                               <span style={{ ...S.badge(s.status === "actif" ? "green" : "red"), cursor: "pointer" }} onClick={() => toggleStudentStatus(s.id)}>
@@ -2128,8 +2141,8 @@ export default function App() {
                       {/* Header */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                         <div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: "#E8EAF0" }}>{s.name}</div>
-                          <div style={{ fontSize: 13, color: "#636985", marginTop: 4 }}>{s.grade}{cls ? ` · ${cls.name}` : ""}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{s.name}</div>
+                          <div style={{ fontSize: 13, color: T.text3, marginTop: 4 }}>{s.grade}{cls ? ` · ${cls.name}` : ""}</div>
                         </div>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <span style={S.badge(s.status === "actif" ? "green" : "red")}>{s.status}</span>
@@ -2157,31 +2170,31 @@ export default function App() {
                           ["Adresse", s.address || "—"],
                           ["Groupe sanguin", s.bloodType || "—"],
                         ].map(([label, val]) => (
-                          <div key={label} style={{ background: "#0F1117", borderRadius: 8, padding: "10px 12px" }}>
-                            <div style={{ fontSize: 11, color: "#636985", marginBottom: 3 }}>{label}</div>
-                            <div style={{ fontSize: 13, color: "#E8EAF0" }}>{val}</div>
+                          <div key={label} style={{ background: T.bg, borderRadius: 8, padding: "10px 12px" }}>
+                            <div style={{ fontSize: 11, color: T.text3, marginBottom: 3 }}>{label}</div>
+                            <div style={{ fontSize: 13, color: T.text }}>{val}</div>
                           </div>
                         ))}
-                        <div style={{ background: "#0F1117", borderRadius: 8, padding: "10px 12px" }}>
-                          <div style={{ fontSize: 11, color: "#636985", marginBottom: 3 }}>Présences</div>
+                        <div style={{ background: T.bg, borderRadius: 8, padding: "10px 12px" }}>
+                          <div style={{ fontSize: 11, color: T.text3, marginBottom: 3 }}>Présences</div>
                           <div style={{ fontSize: 13 }}>
-                            <span style={{ color: "#FF6B6B" }}>{absences} absence{absences !== 1 ? "s" : ""}</span>
-                            <span style={{ color: "#636985", margin: "0 6px" }}>·</span>
-                            <span style={{ color: "#FDCB6E" }}>{retards} retard{retards !== 1 ? "s" : ""}</span>
+                            <span style={{ color: T.danger }}>{absences} absence{absences !== 1 ? "s" : ""}</span>
+                            <span style={{ color: T.text3, margin: "0 6px" }}>·</span>
+                            <span style={{ color: T.amber }}>{retards} retard{retards !== 1 ? "s" : ""}</span>
                           </div>
                         </div>
                         {s.allergies && (
-                          <div style={{ background: "#0F1117", borderRadius: 8, padding: "10px 12px" }}>
-                            <div style={{ fontSize: 11, color: "#FDCB6E", marginBottom: 3 }}>⚕ Allergies / Santé</div>
-                            <div style={{ fontSize: 13, color: "#E8EAF0" }}>{s.allergies}</div>
+                          <div style={{ background: T.bg, borderRadius: 8, padding: "10px 12px" }}>
+                            <div style={{ fontSize: 11, color: T.amber, marginBottom: 3 }}>⚕ Allergies / Santé</div>
+                            <div style={{ fontSize: 13, color: T.text }}>{s.allergies}</div>
                           </div>
                         )}
                       </div>
-                      {s.notes && <div style={{ background: "#0F1117", borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontSize: 13, color: "#9BA1B7" }}><span style={{ color: "#636985", fontSize: 11 }}>Notes · </span>{s.notes}</div>}
+                      {s.notes && <div style={{ background: T.bg, borderRadius: 8, padding: "10px 12px", marginBottom: 16, fontSize: 13, color: T.text2 }}><span style={{ color: T.text3, fontSize: 11 }}>Notes · </span>{s.notes}</div>}
                       {/* Grades by term */}
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#9BA1B7", marginBottom: 10 }}>Notes par trimestre</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: T.text2, marginBottom: 10 }}>Notes par trimestre</div>
                       {stuGrades.length === 0
-                        ? <div style={{ fontSize: 13, color: "#636985", textAlign: "center", padding: 16 }}>Aucune note enregistrée</div>
+                        ? <div style={{ fontSize: 13, color: T.text3, textAlign: "center", padding: 16 }}>Aucune note enregistrée</div>
                         : TERMS.map(term => {
                           const tg = stuGrades.filter(g => g.term === term);
                           if (tg.length === 0) return null;
@@ -2189,16 +2202,16 @@ export default function App() {
                           return (
                             <div key={term} style={{ marginBottom: 14 }}>
                               <div style={{ fontSize: 12, color: "#7C6BFF", fontWeight: 600, marginBottom: 6 }}>{term}</div>
-                              <div style={{ background: "#0F1117", borderRadius: 8, overflow: "hidden" }}>
+                              <div style={{ background: T.bg, borderRadius: 8, overflow: "hidden" }}>
                                 {tg.map(g => (
                                   <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: "1px solid #1C1F2E" }}>
-                                    <span style={{ fontSize: 12, color: "#9BA1B7" }}>{g.subject}</span>
-                                    <span style={{ fontSize: 12, fontWeight: 600, color: (g.score / g.maxScore) >= 0.5 ? "#00B894" : "#FF6B6B" }}>{g.score}/{g.maxScore}</span>
+                                    <span style={{ fontSize: 12, color: T.text2 }}>{g.subject}</span>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: (g.score / g.maxScore) >= 0.5 ? T.accent : T.danger }}>{g.score}/{g.maxScore}</span>
                                   </div>
                                 ))}
                                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", fontSize: 12, fontWeight: 700 }}>
-                                  <span style={{ color: "#636985" }}>Moyenne</span>
-                                  <span style={{ color: Number(avg) >= 10 ? "#00B894" : "#FF6B6B" }}>{avg}/20</span>
+                                  <span style={{ color: T.text3 }}>Moyenne</span>
+                                  <span style={{ color: Number(avg) >= 10 ? T.accent : T.danger }}>{avg}/20</span>
                                 </div>
                               </div>
                             </div>
@@ -2211,23 +2224,23 @@ export default function App() {
                           const parCode = parentCodes.find(p => p.studentId === s.id);
                           return (
                             <div style={{ marginTop: 24, marginBottom: 16 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: "#9BA1B7", marginBottom: 12 }}>🔗 Accès Portail Parent</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: T.text2, marginBottom: 12 }}>🔗 Accès Portail Parent</div>
                               {parCode ? (
-                                <div style={{ background: "#0F1117", borderRadius: 8, padding: 16, border: "1px solid #2A2E42" }}>
+                                <div style={{ background: T.bg, borderRadius: 8, padding: 16, border: `1px solid ${T.border}` }}>
                                   <div style={{ marginBottom: 12 }}>
-                                    <div style={{ fontSize: 11, color: "#636985", marginBottom: 4 }}>Code d'accès</div>
-                                    <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "monospace", color: "#7C6BFF", letterSpacing: 2, textAlign: "center", padding: "12px", background: "#161822", borderRadius: 6, marginBottom: 12 }}>{parCode.accessCode}</div>
+                                    <div style={{ fontSize: 11, color: T.text3, marginBottom: 4 }}>Code d'accès</div>
+                                    <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "monospace", color: "#7C6BFF", letterSpacing: 2, textAlign: "center", padding: "12px", background: T.surface, borderRadius: 6, marginBottom: 12 }}>{parCode.accessCode}</div>
                                   </div>
                                   {parCode.parentPhone && (
                                     <div style={{ marginBottom: 12 }}>
-                                      <div style={{ fontSize: 11, color: "#636985", marginBottom: 4 }}>Téléphone parent</div>
-                                      <div style={{ fontSize: 13, color: "#E8EAF0" }}>{parCode.parentPhone}</div>
+                                      <div style={{ fontSize: 11, color: T.text3, marginBottom: 4 }}>Téléphone parent</div>
+                                      <div style={{ fontSize: 13, color: T.text }}>{parCode.parentPhone}</div>
                                     </div>
                                   )}
                                   {parCode.parentName && (
                                     <div style={{ marginBottom: 12 }}>
-                                      <div style={{ fontSize: 11, color: "#636985", marginBottom: 4 }}>Nom du parent</div>
-                                      <div style={{ fontSize: 13, color: "#E8EAF0" }}>{parCode.parentName}</div>
+                                      <div style={{ fontSize: 11, color: T.text3, marginBottom: 4 }}>Nom du parent</div>
+                                      <div style={{ fontSize: 13, color: T.text }}>{parCode.parentName}</div>
                                     </div>
                                   )}
                                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
@@ -2246,8 +2259,8 @@ export default function App() {
                                   </div>
                                 </div>
                               ) : (
-                                <div style={{ background: "#0F1117", borderRadius: 8, padding: 16, border: "1px solid #2A2E42", textAlign: "center" }}>
-                                  <div style={{ fontSize: 13, color: "#9BA1B7", marginBottom: 12 }}>Aucun code d'accès généré pour ce parent</div>
+                                <div style={{ background: T.bg, borderRadius: 8, padding: 16, border: `1px solid ${T.border}`, textAlign: "center" }}>
+                                  <div style={{ fontSize: 13, color: T.text2, marginBottom: 12 }}>Aucun code d'accès généré pour ce parent</div>
                                   <Btn onClick={async () => {
                                     await generateParentCode(s.id, s.name, s.parent || "Parent", s.parentPhone || "");
                                     setForm({ profileId: s.id });
@@ -2272,27 +2285,27 @@ export default function App() {
                       footer={<Btn variant="ghost" onClick={() => setModal(null)}>Fermer</Btn>}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
                         {[["Montant dû", fmtCFA(amountDue)],["Payé", fmtCFA(totalPaid)],["Reste", fmtCFA(Math.max(0, amountDue - totalPaid))]].map(([l,v]) => (
-                          <div key={l} style={{ background: "#1C1F2E", borderRadius: 8, padding: "12px 16px" }}>
-                            <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 4 }}>{l}</div>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: "#E8EAF0" }}>{v}</div>
+                          <div key={l} style={{ background: T.surface2, borderRadius: 8, padding: "12px 16px" }}>
+                            <div style={{ fontSize: 11, color: T.text3, textTransform: "uppercase", marginBottom: 4 }}>{l}</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{v}</div>
                           </div>
                         ))}
                       </div>
                       <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "#636985", marginBottom: 8 }}>Historique des paiements</div>
-                        {stuPays.length === 0 && <div style={{ fontSize: 13, color: "#636985" }}>Aucun paiement enregistré.</div>}
+                        <div style={{ fontSize: 12, fontWeight: 600, color: T.text3, marginBottom: 8 }}>Historique des paiements</div>
+                        {stuPays.length === 0 && <div style={{ fontSize: 13, color: T.text3 }}>Aucun paiement enregistré.</div>}
                         {stuPays.map(p => (
-                          <div key={p.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #2A2E42", fontSize: 13 }}>
+                          <div key={p.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}>
                             <span>{p.date} {p.note ? `— ${p.note}` : ""}</span>
                             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                              <span style={{ fontWeight: 600, color: "#00B894" }}>{fmtCFA(Number(p.amount))}</span>
+                              <span style={{ fontWeight: 600, color: T.accent }}>{fmtCFA(Number(p.amount))}</span>
                               <Btn variant="danger" small onClick={async () => await saveStudentPayments(studentPayments.filter(x => x.id !== p.id))}>✕</Btn>
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div style={{ borderTop: "1px solid #2A2E42", paddingTop: 16 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "#636985", marginBottom: 10 }}>Enregistrer un paiement</div>
+                      <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: T.text3, marginBottom: 10 }}>Enregistrer un paiement</div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                           <div><div style={S.label}>Montant (FCFA)</div><input style={{ ...S.input, marginTop: 6 }} type="number" placeholder="50000" value={form.payAmount || ""} onChange={e => setForm({ ...form, payAmount: e.target.value })} /></div>
                           <div><div style={S.label}>Date</div><input style={{ ...S.input, marginTop: 6 }} type="date" value={form.payDate || ""} onChange={e => setForm({ ...form, payDate: e.target.value })} /></div>
@@ -2312,10 +2325,10 @@ export default function App() {
                 {modal === "classTuition" && (
                   <Modal2 title="Frais de scolarité par niveau" onClose={() => setModal(null)}
                     footer={<Btn variant="ghost" onClick={() => setModal(null)}>Fermer</Btn>}>
-                    <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>Définissez le montant annuel dû par niveau. Laissez vide pour ne pas suivre ce niveau.</div>
+                    <div style={{ fontSize: 12, color: T.text3, marginBottom: 16 }}>Définissez le montant annuel dû par niveau. Laissez vide pour ne pas suivre ce niveau.</div>
                     {NIV.map(n => (
                       <div key={n} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "center", marginBottom: 10 }}>
-                        <div style={{ fontSize: 13, color: "#E8EAF0" }}>{n}</div>
+                        <div style={{ fontSize: 13, color: T.text }}>{n}</div>
                         <input style={{ ...S.input, marginTop: 0 }} type="number" placeholder="0" value={classTuition[n] || ""} onChange={async e => {
                           const updated = { ...classTuition, [n]: e.target.value ? Number(e.target.value) : 0 };
                           await saveClassTuition(updated);
@@ -2334,7 +2347,7 @@ export default function App() {
                   <SearchBar value={search} onChange={setSearch} placeholder="Rechercher du personnel..." />
                   {role === "admin" && <Btn onClick={() => { setForm({ name: "", username: "", password: "", role: "secretaire" }); setModal("addStaff"); }}>+ Créer un compte</Btn>}
                 </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={S.table}>
                       <thead><tr><th style={S.th}>Nom</th><th style={S.th}>Matière / Classe</th><th style={S.th}>Rôle</th><th style={S.th}>Statut</th>{role === "admin" && <th style={S.th}>Actions</th>}</tr></thead>
@@ -2344,8 +2357,8 @@ export default function App() {
                           const classLabel = taughtClass ? `${taughtClass.name}${taughtClass.section ? ` — ${taughtClass.section}` : ""}` : null;
                           return (
                           <tr key={s.id}>
-                            <td style={{ ...S.td, fontWeight: 500, color: "#E8EAF0" }}>{s.name}</td>
-                            <td style={S.td}>{(s.role === "enseignant" || s.role === "titulaire") ? <span>{s.subject || "—"}{classLabel ? <span style={{ color: "#636985", fontSize: 12 }}> · {classLabel}</span> : null}</span> : "—"}</td>
+                            <td style={{ ...S.td, fontWeight: 500, color: T.text }}>{s.name}</td>
+                            <td style={S.td}>{(s.role === "enseignant" || s.role === "titulaire") ? <span>{s.subject || "—"}{classLabel ? <span style={{ color: T.text3, fontSize: 12 }}> · {classLabel}</span> : null}</span> : "—"}</td>
                             <td style={S.td}><span style={S.badge("purple")}>{s.role === "autre" && s.customRole ? s.customRole : (ROLES[s.role] || s.role)}</span></td>
                             <td style={S.td}>
                               <span style={{ ...S.badge(s.status === "actif" ? "green" : "red"), cursor: role === "admin" ? "pointer" : "default" }} onClick={() => role === "admin" && toggleStaffStatus(s.id)}>
@@ -2420,9 +2433,9 @@ export default function App() {
             {page === "fin" && (role === "admin" || role === "comptable") && (
               <div>
                 {/* Sub-tabs */}
-                <div style={{ display: "flex", gap: 4, marginBottom: 24, background: "#161822", border: "1px solid #2A2E42", borderRadius: 8, padding: 4, width: "fit-content" }}>
+                <div style={{ display: "flex", gap: 4, marginBottom: 24, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: 4, width: "fit-content" }}>
                   {[["txn", "Transactions"], ["payroll", "Paie du Personnel"], ["rapports", "Rapports"]].map(([k, l]) => (
-                    <button key={k} onClick={() => setForm({ ...form, finTab: k })} style={{ padding: "6px 18px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, background: (form.finTab || "txn") === k ? "#7C6BFF" : "transparent", color: (form.finTab || "txn") === k ? "#fff" : "#636985", transition: "all 0.15s" }}>{l}</button>
+                    <button key={k} onClick={() => setForm({ ...form, finTab: k })} style={{ padding: "6px 18px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, background: (form.finTab || "txn") === k ? "#7C6BFF" : "transparent", color: (form.finTab || "txn") === k ? "#fff" : T.text3, transition: "all 0.15s" }}>{l}</button>
                   ))}
                 </div>
 
@@ -2448,15 +2461,15 @@ export default function App() {
                           <input type="month" style={{ ...S.input, width: "auto", marginTop: 0 }} value={payrollMonth} onChange={e => setForm({ ...form, payrollMonth: e.target.value })} />
                         </div>
                         <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
-                          <span style={{ color: "#636985" }}>Total dû: <strong style={{ color: "#E8EAF0" }}>{fmtCFA(totalDue)}</strong></span>
-                          <span style={{ color: "#636985" }}>Payé: <strong style={{ color: "#00B894" }}>{fmtCFA(totalPaid)}</strong></span>
-                          <span style={{ color: "#636985" }}>Reste: <strong style={{ color: totalDue - totalPaid > 0 ? "#FF6B6B" : "#00B894" }}>{fmtCFA(totalDue - totalPaid)}</strong></span>
+                          <span style={{ color: T.text3 }}>Total dû: <strong style={{ color: T.text }}>{fmtCFA(totalDue)}</strong></span>
+                          <span style={{ color: T.text3 }}>Payé: <strong style={{ color: T.accent }}>{fmtCFA(totalPaid)}</strong></span>
+                          <span style={{ color: T.text3 }}>Reste: <strong style={{ color: totalDue - totalPaid > 0 ? T.danger : T.accent }}>{fmtCFA(totalDue - totalPaid)}</strong></span>
                         </div>
                       </div>
                       {activeStaff.length === 0
                         ? <EmptyState icon="◉" title="Aucun personnel actif" subtitle="Ajoutez du personnel depuis l'onglet Personnel" />
                         : (
-                          <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                          <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                             <table style={S.table}>
                               <thead><tr>
                                 <th style={S.th}>Nom</th>
@@ -2485,19 +2498,19 @@ export default function App() {
                                   };
                                   return (
                                     <tr key={s.id}>
-                                      <td style={{ ...S.td, fontWeight: 500, color: "#E8EAF0" }}>{s.name}</td>
+                                      <td style={{ ...S.td, fontWeight: 500, color: T.text }}>{s.name}</td>
                                       <td style={S.td}><span style={S.badge("purple")}>{s.role === "autre" && s.customRole ? s.customRole : (ROLES[s.role] || s.role)}</span></td>
                                       <td style={S.td}><span style={S.badge(isHourly ? "blue" : "green")}>{isHourly ? "Horaire" : "Mensuel"}</span></td>
                                       <td style={S.td}>
                                         {isHourly
                                           ? <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                               <input type="number" min="0" disabled={rec?.paid} style={{ ...S.input, width: 70, marginTop: 0, padding: "4px 8px" }} value={hours} placeholder="0" onChange={e => updateRec({ hours: e.target.value, amount: Number(e.target.value) * Number(s.hourlyRate || 0) })} />
-                                              <span style={{ fontSize: 11, color: "#636985" }}>h × {fmtCFA(Number(s.hourlyRate || 0))}</span>
+                                              <span style={{ fontSize: 11, color: T.text3 }}>h × {fmtCFA(Number(s.hourlyRate || 0))}</span>
                                             </div>
-                                          : <span style={{ fontSize: 13 }}>{s.salaryAmount ? fmtCFA(Number(s.salaryAmount)) : <span style={{ color: "#636985" }}>—</span>}</span>
+                                          : <span style={{ fontSize: 13 }}>{s.salaryAmount ? fmtCFA(Number(s.salaryAmount)) : <span style={{ color: T.text3 }}>—</span>}</span>
                                         }
                                       </td>
-                                      <td style={{ ...S.td, fontWeight: 600, color: "#E8EAF0" }}>{due > 0 ? fmtCFA(due) : "—"}</td>
+                                      <td style={{ ...S.td, fontWeight: 600, color: T.text }}>{due > 0 ? fmtCFA(due) : "—"}</td>
                                       <td style={S.td}>
                                         <span style={{ ...S.badge(rec?.paid ? "green" : "red"), cursor: rec?.paid ? "default" : "pointer" }}
                                           onClick={() => { if (!rec?.paid) updateRec({ paid: true, amount: due, paidDate: new Date().toISOString().slice(0, 10) }); }}>
@@ -2522,26 +2535,26 @@ export default function App() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
                   <div style={S.stat}>
                     <div style={S.label}>Solde Total</div>
-                    <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8, color: finTotals.balance >= 0 ? "#00B894" : "#FF6B6B" }}>{fmtCFA(finTotals.balance)}</div>
+                    <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8, color: finTotals.balance >= 0 ? T.accent : T.danger }}>{fmtCFA(finTotals.balance)}</div>
                   </div>
                   <div style={S.stat}>
                     <div style={S.label}>Revenus (total)</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{fmtCFA(finTotals.income)}</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.accent }}>{fmtCFA(finTotals.income)}</div>
                   </div>
                   <div style={S.stat}>
                     <div style={S.label}>Dépenses (total)</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#FF6B6B" }}>{fmtCFA(finTotals.expense)}</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.danger }}>{fmtCFA(finTotals.expense)}</div>
                   </div>
                   <div style={S.stat}>
                     <div style={S.label}>Ce mois</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, marginTop: 8, color: finTotals.monthBalance >= 0 ? "#00B894" : "#FF6B6B" }}>{finTotals.monthBalance >= 0 ? "+" : ""}{fmtCFA(finTotals.monthBalance)}</div>
-                    <div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>+{fmtCFA(finTotals.monthIncome)} / -{fmtCFA(finTotals.monthExpense)}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, marginTop: 8, color: finTotals.monthBalance >= 0 ? T.accent : T.danger }}>{finTotals.monthBalance >= 0 ? "+" : ""}{fmtCFA(finTotals.monthBalance)}</div>
+                    <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>+{fmtCFA(finTotals.monthIncome)} / -{fmtCFA(finTotals.monthExpense)}</div>
                   </div>
                 </div>
 
                 {/* Monthly bar chart */}
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 28 }}>
-                  <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Aperçu Mensuel ({new Date().getFullYear()})</h3></div>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 28 }}>
+                  <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Aperçu Mensuel ({new Date().getFullYear()})</h3></div>
                   <div style={{ padding: 20 }}>
                     {(() => {
                       const year = new Date().getFullYear();
@@ -2557,18 +2570,18 @@ export default function App() {
                           {monthData.map((d, i) => (
                             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                               <div style={{ display: "flex", gap: 2, alignItems: "end", height: 100, width: "100%" }}>
-                                <div style={{ flex: 1, background: "#00B894", borderRadius: "3px 3px 0 0", height: `${(d.inc / maxVal) * 100}%`, minHeight: d.inc > 0 ? 4 : 0, transition: "height 0.3s" }} title={`Revenus: ${fmtCFA(d.inc)}`} />
-                                <div style={{ flex: 1, background: "#FF6B6B", borderRadius: "3px 3px 0 0", height: `${(d.exp / maxVal) * 100}%`, minHeight: d.exp > 0 ? 4 : 0, transition: "height 0.3s" }} title={`Dépenses: ${fmtCFA(d.exp)}`} />
+                                <div style={{ flex: 1, background: T.accent, borderRadius: "3px 3px 0 0", height: `${(d.inc / maxVal) * 100}%`, minHeight: d.inc > 0 ? 4 : 0, transition: "height 0.3s" }} title={`Revenus: ${fmtCFA(d.inc)}`} />
+                                <div style={{ flex: 1, background: T.danger, borderRadius: "3px 3px 0 0", height: `${(d.exp / maxVal) * 100}%`, minHeight: d.exp > 0 ? 4 : 0, transition: "height 0.3s" }} title={`Dépenses: ${fmtCFA(d.exp)}`} />
                               </div>
-                              <div style={{ fontSize: 10, color: "#636985" }}>{d.m}</div>
+                              <div style={{ fontSize: 10, color: T.text3 }}>{d.m}</div>
                             </div>
                           ))}
                         </div>
                       );
                     })()}
                     <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 12 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#9BA1B7" }}><div style={{ width: 10, height: 10, borderRadius: 2, background: "#00B894" }} /> Revenus</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#9BA1B7" }}><div style={{ width: 10, height: 10, borderRadius: 2, background: "#FF6B6B" }} /> Dépenses</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.text2 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: T.accent }} /> Revenus</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.text2 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: T.danger }} /> Dépenses</div>
                     </div>
                   </div>
                 </div>
@@ -2581,7 +2594,7 @@ export default function App() {
                     <Btn variant="danger" onClick={() => { setForm({ label: "", amount: "", type: "expense", category: FIN_CATEGORIES.expense[0], date: new Date().toISOString().slice(0, 10), note: "" }); setModal("addFin"); }}>+ Dépense</Btn>
                   </div>
                 </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={S.table}>
                       <thead><tr><th style={S.th}>Date</th><th style={S.th}>Libellé</th><th style={S.th}>Catégorie</th><th style={S.th}>Montant</th><th style={S.th}>Actions</th></tr></thead>
@@ -2589,9 +2602,9 @@ export default function App() {
                         {[...filteredFinances].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(t => (
                           <tr key={t.id}>
                             <td style={S.td}>{t.date}</td>
-                            <td style={{ ...S.td, fontWeight: 500, color: "#E8EAF0" }}>{t.label}{t.note && <div style={{ fontSize: 11, color: "#636985" }}>{t.note}</div>}</td>
+                            <td style={{ ...S.td, fontWeight: 500, color: T.text }}>{t.label}{t.note && <div style={{ fontSize: 11, color: T.text3 }}>{t.note}</div>}</td>
                             <td style={S.td}><span style={S.badge(t.type === "income" ? "green" : "red")}>{t.category}</span></td>
-                            <td style={{ ...S.td, fontWeight: 600, color: t.type === "income" ? "#00B894" : "#FF6B6B" }}>{t.type === "income" ? "+" : "-"}{fmtCFA(t.amount)}</td>
+                            <td style={{ ...S.td, fontWeight: 600, color: t.type === "income" ? T.accent : T.danger }}>{t.type === "income" ? "+" : "-"}{fmtCFA(t.amount)}</td>
                             <td style={S.td}>
                               <div style={{ display: "flex", gap: 6 }}>
                                 {(role === "admin" || role === "comptable") && <Btn variant="ghost" small onClick={() => { setForm({ ...t }); setModal("editFin"); }}>Modifier</Btn>}
@@ -2692,13 +2705,13 @@ export default function App() {
                     <div>
                       {/* Controls */}
                       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 20 }}>
-                        <div style={{ display: "flex", gap: 4, background: "#161822", border: "1px solid #2A2E42", borderRadius: 8, padding: 4 }}>
+                        <div style={{ display: "flex", gap: 4, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, padding: 4 }}>
                           {[["journalier","Jour"],["hebdomadaire","Semaine"],["mensuel","Mois"],["trimestriel","Trimestre"]].map(([k,l]) => (
-                            <button key={k} onClick={() => setForm({ ...form, rapportPeriod: k })} style={{ padding: "5px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: period === k ? "#7C6BFF" : "transparent", color: period === k ? "#fff" : "#636985" }}>{l}</button>
+                            <button key={k} onClick={() => setForm({ ...form, rapportPeriod: k })} style={{ padding: "5px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: period === k ? "#7C6BFF" : "transparent", color: period === k ? "#fff" : T.text3 }}>{l}</button>
                           ))}
                         </div>
                         {period === "journalier" && <input type="date" style={{ ...S.input, width: "auto", marginTop: 0 }} value={selectedDay} onChange={e => setForm({ ...form, rapportDay: e.target.value })} />}
-                        {period === "hebdomadaire" && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#9BA1B7" }}><span>Semaine du</span><input type="date" style={{ ...S.input, width: "auto", marginTop: 0 }} value={selectedWeek} onChange={e => setForm({ ...form, rapportWeek: e.target.value })} /></div>}
+                        {period === "hebdomadaire" && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.text2 }}><span>Semaine du</span><input type="date" style={{ ...S.input, width: "auto", marginTop: 0 }} value={selectedWeek} onChange={e => setForm({ ...form, rapportWeek: e.target.value })} /></div>}
                         {period === "mensuel" && <input type="month" style={{ ...S.input, width: "auto", marginTop: 0 }} value={selectedMonth} onChange={e => setForm({ ...form, rapportMonth: e.target.value })} />}
                         {period === "trimestriel" && (
                           <select style={{ ...S.input, width: "auto", marginTop: 0 }} value={selectedTrimester} onChange={e => setForm({ ...form, rapportTrimester: e.target.value })}>
@@ -2712,13 +2725,13 @@ export default function App() {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 24 }}>
                         {[["Encaissé", fmtCFA(totalIn), "green"],["Dépensé", fmtCFA(totalOut), "red"],["Solde", fmtCFA(totalIn - totalOut), totalIn - totalOut >= 0 ? "green" : "red"]].map(([l,v,c]) => (
                           <div key={l} style={{ ...S.stat, borderColor: c === "green" ? "rgba(0,184,148,0.2)" : "rgba(255,107,107,0.2)" }}>
-                            <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 6 }}>{l}</div>
-                            <div style={{ fontSize: 20, fontWeight: 700, color: c === "green" ? "#00B894" : "#FF6B6B" }}>{v}</div>
+                            <div style={{ fontSize: 11, color: T.text3, textTransform: "uppercase", marginBottom: 6 }}>{l}</div>
+                            <div style={{ fontSize: 20, fontWeight: 700, color: c === "green" ? T.accent : T.danger }}>{v}</div>
                           </div>
                         ))}
                       </div>
                       {/* Table */}
-                      <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                         <div style={{ overflowX: "auto" }}>
                           <table style={S.table}>
                             <thead><tr><th style={S.th}>Date</th><th style={S.th}>Libellé</th><th style={S.th}>Catégorie</th><th style={S.th}>Type</th><th style={S.th}>Montant</th></tr></thead>
@@ -2726,10 +2739,10 @@ export default function App() {
                               {allRows.map(r => (
                                 <tr key={r.id + r.source}>
                                   <td style={S.td}>{r.date}</td>
-                                  <td style={{ ...S.td, color: "#E8EAF0" }}>{r.label}</td>
+                                  <td style={{ ...S.td, color: T.text }}>{r.label}</td>
                                   <td style={S.td}>{r.category}</td>
                                   <td style={S.td}><span style={S.badge(r.type === "income" ? "green" : "red")}>{r.type === "income" ? "Revenu" : "Dépense"}</span></td>
-                                  <td style={{ ...S.td, fontWeight: 600, color: r.type === "income" ? "#00B894" : "#FF6B6B" }}>{fmtCFA(Number(r.amount))}</td>
+                                  <td style={{ ...S.td, fontWeight: 600, color: r.type === "income" ? T.accent : T.danger }}>{fmtCFA(Number(r.amount))}</td>
                                 </tr>
                               ))}
                               {allRows.length === 0 && <tr><td colSpan={5}><EmptyState icon="◆" title="Aucune transaction" subtitle="Pour la période sélectionnée" /></td></tr>}
@@ -2772,7 +2785,7 @@ export default function App() {
                 {/* Over-budget alerts */}
                 {budgetData.overBudgetItems.length > 0 && (
                   <div style={{ background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 10, padding: 16, marginBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#FF6B6B", marginBottom: 8 }}>Alertes dépassement de budget</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: T.danger, marginBottom: 8 }}>Alertes dépassement de budget</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {budgetData.overBudgetItems.map(c => (
                         <span key={c.cat} style={{ ...S.badge("red"), fontSize: 12 }}>
@@ -2787,28 +2800,28 @@ export default function App() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
                   <div style={S.stat}>
                     <div style={S.label}>Budget Annuel Net</div>
-                    <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8, color: budgetData.plannedBalance >= 0 ? "#00B894" : "#FF6B6B" }}>{fmtCFA(budgetData.plannedBalance)}</div>
+                    <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8, color: budgetData.plannedBalance >= 0 ? T.accent : T.danger }}>{fmtCFA(budgetData.plannedBalance)}</div>
                   </div>
                   <div style={S.stat}>
                     <div style={S.label}>Budget Revenus</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#00B894" }}>{fmtCFA(budgetData.plannedIncome)}</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.accent }}>{fmtCFA(budgetData.plannedIncome)}</div>
                   </div>
                   <div style={S.stat}>
                     <div style={S.label}>Budget Dépenses</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: "#FF6B6B" }}>{fmtCFA(budgetData.plannedExpense)}</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: T.danger }}>{fmtCFA(budgetData.plannedExpense)}</div>
                   </div>
                   <div style={S.stat}>
                     <div style={S.label}>Réel vs Budget (dépenses)</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, marginTop: 8, color: budgetData.actualExpense <= budgetData.plannedExpense ? "#00B894" : "#FF6B6B" }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, marginTop: 8, color: budgetData.actualExpense <= budgetData.plannedExpense ? T.accent : T.danger }}>
                       {budgetData.plannedExpense > 0 ? Math.round((budgetData.actualExpense / budgetData.plannedExpense) * 100) : 0}%
                     </div>
-                    <div style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>{fmtCFA(budgetData.actualExpense)} / {fmtCFA(budgetData.plannedExpense)}</div>
+                    <div style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>{fmtCFA(budgetData.actualExpense)} / {fmtCFA(budgetData.plannedExpense)}</div>
                   </div>
                 </div>
 
                 {/* Monthly budget vs actual chart */}
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 28 }}>
-                  <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Budget vs Réel par Mois ({budgetYear})</h3></div>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 28 }}>
+                  <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Budget vs Réel par Mois ({budgetYear})</h3></div>
                   <div style={{ padding: 20 }}>
                     {(() => {
                       const maxVal = Math.max(...budgetData.byMonth.map(d => Math.max(d.plannedExp, d.actualExp, d.plannedInc, d.actualInc)), 1);
@@ -2818,44 +2831,44 @@ export default function App() {
                             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                               <div style={{ display: "flex", gap: 1, alignItems: "end", height: 110, width: "100%" }}>
                                 <div style={{ flex: 1, background: "rgba(108,92,231,0.4)", borderRadius: "2px 2px 0 0", height: `${(d.plannedExp / maxVal) * 100}%`, minHeight: d.plannedExp > 0 ? 3 : 0 }} title={`Budget dép.: ${fmtCFA(d.plannedExp)}`} />
-                                <div style={{ flex: 1, background: "#FF6B6B", borderRadius: "2px 2px 0 0", height: `${(d.actualExp / maxVal) * 100}%`, minHeight: d.actualExp > 0 ? 3 : 0 }} title={`Réel dép.: ${fmtCFA(d.actualExp)}`} />
+                                <div style={{ flex: 1, background: T.danger, borderRadius: "2px 2px 0 0", height: `${(d.actualExp / maxVal) * 100}%`, minHeight: d.actualExp > 0 ? 3 : 0 }} title={`Réel dép.: ${fmtCFA(d.actualExp)}`} />
                                 <div style={{ flex: 1, background: "rgba(0,184,148,0.4)", borderRadius: "2px 2px 0 0", height: `${(d.plannedInc / maxVal) * 100}%`, minHeight: d.plannedInc > 0 ? 3 : 0 }} title={`Budget rev.: ${fmtCFA(d.plannedInc)}`} />
-                                <div style={{ flex: 1, background: "#00B894", borderRadius: "2px 2px 0 0", height: `${(d.actualInc / maxVal) * 100}%`, minHeight: d.actualInc > 0 ? 3 : 0 }} title={`Réel rev.: ${fmtCFA(d.actualInc)}`} />
+                                <div style={{ flex: 1, background: T.accent, borderRadius: "2px 2px 0 0", height: `${(d.actualInc / maxVal) * 100}%`, minHeight: d.actualInc > 0 ? 3 : 0 }} title={`Réel rev.: ${fmtCFA(d.actualInc)}`} />
                               </div>
-                              <div style={{ fontSize: 10, color: "#636985" }}>{d.month}</div>
+                              <div style={{ fontSize: 10, color: T.text3 }}>{d.month}</div>
                             </div>
                           ))}
                         </div>
                       );
                     })()}
                     <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 12, flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#9BA1B7" }}><div style={{ width: 10, height: 10, borderRadius: 2, background: "rgba(108,92,231,0.4)" }} /> Budget Dép.</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#9BA1B7" }}><div style={{ width: 10, height: 10, borderRadius: 2, background: "#FF6B6B" }} /> Réel Dép.</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#9BA1B7" }}><div style={{ width: 10, height: 10, borderRadius: 2, background: "rgba(0,184,148,0.4)" }} /> Budget Rev.</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#9BA1B7" }}><div style={{ width: 10, height: 10, borderRadius: 2, background: "#00B894" }} /> Réel Rev.</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.text2 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: "rgba(108,92,231,0.4)" }} /> Budget Dép.</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.text2 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: T.danger }} /> Réel Dép.</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.text2 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: "rgba(0,184,148,0.4)" }} /> Budget Rev.</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.text2 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: T.accent }} /> Réel Rev.</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Budget vs Actual by category */}
                 {budgetData.byCat.length > 0 && (
-                  <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden", marginBottom: 28 }}>
-                    <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42" }}><h3>Budget vs Réel par Catégorie</h3></div>
+                  <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 28 }}>
+                    <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Budget vs Réel par Catégorie</h3></div>
                     <div style={{ padding: 20 }}>
                       {budgetData.byCat.map(c => {
                         const maxBar = Math.max(c.planned, c.actual, 1);
                         return (
                           <div key={c.cat} style={{ marginBottom: 14 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                              <span style={{ fontSize: 13, color: "#E8EAF0" }}>{c.cat}</span>
+                              <span style={{ fontSize: 13, color: T.text }}>{c.cat}</span>
                               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                                 {c.overBudget && <span style={S.badge("red")}>+{fmtCFA(c.diff)}</span>}
-                                <span style={{ fontSize: 12, color: "#636985" }}>{fmtCFA(c.actual)} / {fmtCFA(c.planned)}</span>
+                                <span style={{ fontSize: 12, color: T.text3 }}>{fmtCFA(c.actual)} / {fmtCFA(c.planned)}</span>
                               </div>
                             </div>
                             <div style={{ display: "flex", gap: 4, height: 8 }}>
                               <div style={{ flex: `${c.planned / maxBar}`, background: "rgba(108,92,231,0.4)", borderRadius: 4, minWidth: c.planned > 0 ? 4 : 0 }} />
-                              <div style={{ flex: `${c.actual / maxBar}`, background: c.overBudget ? "#FF6B6B" : "#00B894", borderRadius: 4, minWidth: c.actual > 0 ? 4 : 0 }} />
+                              <div style={{ flex: `${c.actual / maxBar}`, background: c.overBudget ? T.danger : T.accent, borderRadius: 4, minWidth: c.actual > 0 ? 4 : 0 }} />
                             </div>
                           </div>
                         );
@@ -2868,7 +2881,7 @@ export default function App() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                   <SearchBar value={search} onChange={setSearch} placeholder="Rechercher un budget..." />
                 </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={S.table}>
                       <thead><tr><th style={S.th}>Période</th><th style={S.th}>Catégorie</th><th style={S.th}>Type</th><th style={S.th}>Montant Prévu</th><th style={S.th}>Note</th><th style={S.th}>Actions</th></tr></thead>
@@ -2879,10 +2892,10 @@ export default function App() {
                               {(!b.scope || b.scope === "monthly") && b.month ? `${FIN_MONTHS[Number(b.month.split("-")[1]) - 1] || ""} ${b.month.split("-")[0]}` : b.scope === "annual" ? `Annuel ${b.year}` : b.activity || "—"}
                               {b.scope && b.scope !== "monthly" && <span style={{ ...S.badge(b.scope === "annual" ? "blue" : "purple"), marginLeft: 6, fontSize: 10 }}>{b.scope === "annual" ? "Annuel" : "Activité"}</span>}
                             </td>
-                            <td style={{ ...S.td, fontWeight: 500, color: "#E8EAF0" }}>{b.category}</td>
+                            <td style={{ ...S.td, fontWeight: 500, color: T.text }}>{b.category}</td>
                             <td style={S.td}><span style={S.badge(b.type === "income" ? "green" : "red")}>{b.type === "income" ? "Revenu" : "Dépense"}</span></td>
-                            <td style={{ ...S.td, fontWeight: 600, color: b.type === "income" ? "#00B894" : "#FF6B6B" }}>{fmtCFA(b.planned)}</td>
-                            <td style={{ ...S.td, fontSize: 12, color: "#636985" }}>{b.note || "—"}</td>
+                            <td style={{ ...S.td, fontWeight: 600, color: b.type === "income" ? T.accent : T.danger }}>{fmtCFA(b.planned)}</td>
+                            <td style={{ ...S.td, fontSize: 12, color: T.text3 }}>{b.note || "—"}</td>
                             <td style={S.td}>
                               <div style={{ display: "flex", gap: 6 }}>
                                 <Btn variant="ghost" small onClick={() => { setForm({ ...b, scope: b.scope || "monthly", activity: b.activity || "" }); setModal("editBudget"); }}>Modifier</Btn>
@@ -2975,7 +2988,7 @@ export default function App() {
                         <input style={S.input} type="month" value={form.toMonth || ""} onChange={e => setForm({ ...form, toMonth: e.target.value })} />
                       </div>
                     </div>
-                    <div style={{ fontSize: 12, color: "#636985" }}>Toutes les entrées du mois source seront dupliquées vers le mois destination.</div>
+                    <div style={{ fontSize: 12, color: T.text3 }}>Toutes les entrées du mois source seront dupliquées vers le mois destination.</div>
                   </Modal2>
                 )}
               </div>
@@ -2994,15 +3007,15 @@ export default function App() {
                     const teacher = staff.find(s => s.id === c.teacherId);
                     const count = students.filter(s => s.classId === c.id).length;
                     return (
-                      <div key={c.id} style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 20 }}>
+                      <div key={c.id} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 20 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                           <div>
                             <div style={{ fontSize: 16, fontWeight: 700 }}>{c.name}</div>
-                            <div style={{ fontSize: 12, color: "#636985", marginTop: 4 }}>{c.level}{c.section ? ` — ${c.section}` : ""} · {c.year}/{c.year + 1}</div>
+                            <div style={{ fontSize: 12, color: T.text3, marginTop: 4 }}>{c.level}{c.section ? ` — ${c.section}` : ""} · {c.year}/{c.year + 1}</div>
                           </div>
                           <span style={S.badge("blue")}>{count} élèves</span>
                         </div>
-                        {teacher && <div style={{ fontSize: 12, color: "#9BA1B7", marginTop: 8 }}>Prof principal: {teacher.name}</div>}
+                        {teacher && <div style={{ fontSize: 12, color: T.text2, marginTop: 8 }}>Prof principal: {teacher.name}</div>}
                         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                           <Btn variant="ghost" small onClick={() => { setForm({ ...c }); setModal("editCls"); }}>Modifier</Btn>
                           <Btn variant="ghost" small onClick={() => { setForm({ classId: c.id, className: c.name }); setModal("clsStudents"); }}>Élèves</Btn>
@@ -3045,7 +3058,7 @@ export default function App() {
                     footer={<Btn variant="ghost" onClick={() => setModal(null)}>Fermer</Btn>}>
                     <div style={{ maxHeight: 400, overflowY: "auto" }}>
                       {students.map(s => (
-                        <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #2A2E42" }}>
+                        <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${T.border}` }}>
                           <span style={{ fontSize: 13 }}>{s.name}</span>
                           <Btn variant={s.classId === form.classId ? "danger" : "ghost"} small onClick={async () => {
                             await saveStu(students.map(x => x.id === s.id ? { ...x, classId: s.classId === form.classId ? null : form.classId } : x));
@@ -3077,10 +3090,10 @@ export default function App() {
                   const date = form.attDate || new Date().toISOString().slice(0, 10);
                   const existing = attendance.filter(a => a.classId === form.attClass && a.date === date);
                   return (
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
-                      <div style={{ padding: "16px 20px", borderBottom: "1px solid #2A2E42", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <h3>{cls?.name} — {date}</h3>
-                        <span style={{ fontSize: 12, color: "#636985" }}>{clsStudents.length} élèves</span>
+                        <span style={{ fontSize: 12, color: T.text3 }}>{clsStudents.length} élèves</span>
                       </div>
                       {clsStudents.length === 0 ? <EmptyState icon="◎" title="Aucun élève dans cette classe" subtitle="Assignez des élèves depuis l'onglet Classes" /> : (
                         <div>
@@ -3096,7 +3109,7 @@ export default function App() {
                                 <span style={{ fontSize: 13, fontWeight: 500 }}>{s.name}</span>
                                 <div style={{ display: "flex", gap: 6 }}>
                                   {["present", "absent", "retard"].map(st => (
-                                    <button key={st} onClick={() => setStatus(st)} style={{ padding: "4px 10px", borderRadius: 4, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, background: status === st ? (st === "present" ? "#00B894" : st === "absent" ? "#FF6B6B" : "#FDCB6E") : "#2A2E42", color: status === st ? "#fff" : "#636985" }}>
+                                    <button key={st} onClick={() => setStatus(st)} style={{ padding: "4px 10px", borderRadius: 4, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, background: status === st ? (st === "present" ? T.accent : st === "absent" ? T.danger : T.amber) : "#2A2E42", color: status === st ? "#fff" : T.text3 }}>
                                       {st === "present" ? "Présent" : st === "absent" ? "Absent" : "Retard"}
                                     </button>
                                   ))}
@@ -3105,9 +3118,9 @@ export default function App() {
                             );
                           })}
                           <div style={{ padding: "12px 20px", display: "flex", gap: 16, fontSize: 12 }}>
-                            <span style={{ color: "#00B894" }}>✓ {existing.filter(a => a.status === "present").length} présents</span>
-                            <span style={{ color: "#FF6B6B" }}>✗ {existing.filter(a => a.status === "absent").length} absents</span>
-                            <span style={{ color: "#FDCB6E" }}>⏱ {existing.filter(a => a.status === "retard").length} retards</span>
+                            <span style={{ color: T.accent }}>✓ {existing.filter(a => a.status === "present").length} présents</span>
+                            <span style={{ color: T.danger }}>✗ {existing.filter(a => a.status === "absent").length} absents</span>
+                            <span style={{ color: T.amber }}>⏱ {existing.filter(a => a.status === "retard").length} retards</span>
                           </div>
                         </div>
                       )}
@@ -3139,7 +3152,7 @@ export default function App() {
                   const clsGrades = grades.filter(g => g.classId === form.gradeClass && g.term === term);
                   const subjects = [...new Set(clsGrades.map(g => g.subject))];
                   return subjects.length === 0 ? <EmptyState icon="✎" title="Aucune note pour cette classe" subtitle="Ajoutez des notes pour commencer" /> : (
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                       <div style={{ overflowX: "auto" }}>
                         <table style={S.table}>
                           <thead><tr>
@@ -3158,7 +3171,7 @@ export default function App() {
                                     const g = stuGrades.find(x => x.subject === sub);
                                     return <td key={sub} style={{ ...S.td, textAlign: "center" }}>{g ? `${g.score}/${g.maxScore}` : "—"}</td>;
                                   })}
-                                  <td style={{ ...S.td, fontWeight: 700, color: Number(avg) >= 10 ? "#00B894" : "#FF6B6B" }}>{avg}</td>
+                                  <td style={{ ...S.td, fontWeight: 700, color: Number(avg) >= 10 ? T.accent : T.danger }}>{avg}</td>
                                 </tr>
                               );
                             })}
@@ -3225,11 +3238,11 @@ export default function App() {
                           {clsTmt.filter(t => t.day === day).sort((a, b) => a.start.localeCompare(b.start)).map(t => {
                             const teacher = staff.find(s => s.id === t.teacherId);
                             return (
-                              <div key={t.id} style={{ background: "#1C1F2E", border: "1px solid #2A2E42", borderRadius: 6, padding: 8, marginBottom: 6, fontSize: 11 }}>
-                                <div style={{ fontWeight: 600, color: "#A29BFE" }}>{t.subject}</div>
-                                <div style={{ color: "#636985", marginTop: 2 }}>{t.start}–{t.end}</div>
-                                {teacher && <div style={{ color: "#9BA1B7", marginTop: 2 }}>{teacher.name}</div>}
-                                {t.room && <div style={{ color: "#636985" }}>Salle {t.room}</div>}
+                              <div key={t.id} style={{ background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 6, padding: 8, marginBottom: 6, fontSize: 11 }}>
+                                <div style={{ fontWeight: 600, color: T.accent }}>{t.subject}</div>
+                                <div style={{ color: T.text3, marginTop: 2 }}>{t.start}–{t.end}</div>
+                                {teacher && <div style={{ color: T.text2, marginTop: 2 }}>{teacher.name}</div>}
+                                {t.room && <div style={{ color: T.text3 }}>Salle {t.room}</div>}
                                 <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
                                   <Btn variant="ghost" small onClick={() => { setForm({ ...form, editTmtId: t.id, tmtDay: t.day, tmtSubject: t.subject, tmtStart: t.start, tmtEnd: t.end, tmtTeacher: t.teacherId, tmtRoom: t.room || "" }); setModal("addTmt"); }}>✎</Btn>
                                   <Btn variant="danger" small onClick={() => askConfirm("Supprimer ce créneau ?", async () => { await saveTimetable(timetable.filter(x => x.id !== t.id)); })}>✕</Btn>
@@ -3293,7 +3306,7 @@ export default function App() {
                   <h2>Examens</h2>
                   <Btn onClick={() => { setForm({ examName: "", examClass: "", examSubject: SUBJECTS[0], examDate: "", examDuration: "120", examRoom: "", editExamId: null }); setModal("addExam"); }}>+ Nouvel examen</Btn>
                 </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={S.table}>
                       <thead><tr><th style={S.th}>Examen</th><th style={S.th}>Classe</th><th style={S.th}>Matière</th><th style={S.th}>Date</th><th style={S.th}>Durée</th><th style={S.th}>Salle</th><th style={S.th}>Actions</th></tr></thead>
@@ -3364,7 +3377,7 @@ export default function App() {
                   <h2>Discipline</h2>
                   <Btn onClick={() => { setForm({ discStudent: "", discType: INCIDENT_TYPES[0], discDate: new Date().toISOString().slice(0, 10), discDesc: "", discSanction: SANCTIONS[0] }); setModal("addDisc"); }}>+ Nouvel incident</Btn>
                 </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={S.table}>
                       <thead><tr><th style={S.th}>Élève</th><th style={S.th}>Type</th><th style={S.th}>Date</th><th style={S.th}>Description</th><th style={S.th}>Sanction</th><th style={S.th}>Actions</th></tr></thead>
@@ -3377,7 +3390,7 @@ export default function App() {
                               <td style={{ ...S.td, fontWeight: 500 }}>{stu?.name || "—"}</td>
                               <td style={S.td}><span style={S.badge("red")}>{inc.type}</span></td>
                               <td style={S.td}>{inc.date}</td>
-                              <td style={{ ...S.td, fontSize: 12, color: "#9BA1B7", maxWidth: 200 }}>{inc.description || "—"}</td>
+                              <td style={{ ...S.td, fontSize: 12, color: T.text2, maxWidth: 200 }}>{inc.description || "—"}</td>
                               <td style={S.td}>{inc.sanction || "—"}</td>
                               <td style={S.td}><Btn variant="danger" small onClick={() => askConfirm("Supprimer cet incident ?", async () => { await saveIncidents(incidents.filter(x => x.id !== inc.id)); })}>Suppr.</Btn></td>
                             </tr>
@@ -3436,61 +3449,61 @@ export default function App() {
                     { type: "cantineRecu", icon: "⊙", label: "Reçu Cantine", desc: "Reçu de paiement de la cantine pour un élève" },
                     { type: "librairie", icon: "⊚", label: "Reçu Bibliothèque", desc: "Reçu de frais de bibliothèque / prêt de livre" },
                   ].map(doc => (
-                    <div key={doc.type} style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24 }}>
+                    <div key={doc.type} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 24 }}>
                       <div style={{ fontSize: 28, marginBottom: 12, opacity: 0.6 }}>{doc.icon}</div>
                       <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>{doc.label}</div>
-                      <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>{doc.desc}</div>
+                      <div style={{ fontSize: 12, color: T.text3, marginBottom: 16 }}>{doc.desc}</div>
                       <Btn variant="ghost" onClick={() => { setForm({ docType: doc.type, docStudent: "", docLabel: doc.label, docMonth: new Date().toISOString().slice(0,7), docLoan: "" }); setModal("genDoc"); }}>Générer</Btn>
                     </div>
                   ))}
-                  <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24 }}>
+                  <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 24 }}>
                     <div style={{ fontSize: 28, marginBottom: 12, opacity: 0.6 }}>⊗</div>
                     <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Palmarès de classe</div>
-                    <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>Classement des élèves par moyenne, par classe et trimestre</div>
+                    <div style={{ fontSize: 12, color: T.text3, marginBottom: 16 }}>Classement des élèves par moyenne, par classe et trimestre</div>
                     <Btn variant="ghost" onClick={() => { setForm({ palmClass: classes[0]?.id || "", palmTerm: TERMS[0] }); setModal("genPalm"); }}>Générer</Btn>
                   </div>
                 </div>
 
                 {/* Multi-receipt section — multiple doc types for ONE student */}
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24, marginBottom: 24 }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 24, marginBottom: 24 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Multi-reçus</div>
-                  <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>Choisissez un élève, cochez les reçus à imprimer ensemble</div>
+                  <div style={{ fontSize: 12, color: T.text3, marginBottom: 16 }}>Choisissez un élève, cochez les reçus à imprimer ensemble</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 16 }}>
                     <div style={{ position: "relative" }}>
-                      <div style={{ fontSize: 12, color: "#636985", marginBottom: 4 }}>Élève</div>
+                      <div style={{ fontSize: 12, color: T.text3, marginBottom: 4 }}>Élève</div>
                       <input
                         value={form.mrStuQ !== undefined ? form.mrStuQ : (students.find(s => s.id === form.mrStuId)?.name || "")}
                         onChange={e => setForm({ ...form, mrStuQ: e.target.value, mrStuId: "" })}
                         placeholder="Rechercher un élève..."
-                        style={{ background: "#1C1F2E", color: "#E8EAF0", border: "1px solid #2A2E42", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 220 }}
+                        style={{ background: T.surface2, color: T.text, border: `1px solid ${T.border}`, borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 220 }}
                       />
                       {form.mrStuQ && !form.mrStuId && (() => {
                         const q = form.mrStuQ.toLowerCase();
                         const matches = students.filter(s => s.name.toLowerCase().includes(q) || (s.grade||"").toLowerCase().includes(q)).slice(0, 8);
                         if (!matches.length) return null;
                         return (
-                          <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 99, background: "#1C1F2E", border: "1px solid #2A2E42", borderRadius: 6, width: 260, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px #0006" }}>
+                          <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 99, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 6, width: 260, maxHeight: 220, overflowY: "auto", boxShadow: "0 4px 16px #0006" }}>
                             {matches.map(s => (
                               <div key={s.id} onClick={() => setForm({ ...form, mrStuId: s.id, mrStuQ: undefined })}
-                                style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, color: "#E8EAF0", borderBottom: "1px solid #2A2E42" }}
+                                style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, color: T.text, borderBottom: `1px solid ${T.border}` }}
                                 onMouseEnter={e => e.currentTarget.style.background = "#2A2E42"}
                                 onMouseLeave={e => e.currentTarget.style.background = ""}
-                              >{s.name} <span style={{ color: "#636985" }}>— {s.grade}</span></div>
+                              >{s.name} <span style={{ color: T.text3 }}>— {s.grade}</span></div>
                             ))}
                           </div>
                         );
                       })()}
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, color: "#636985", marginBottom: 4 }}>Mois (Cantine)</div>
-                      <input value={form.mrMonth || ""} onChange={e => setForm({ ...form, mrMonth: e.target.value })} placeholder="ex: Avril 2025" style={{ background: "#1C1F2E", color: "#E8EAF0", border: "1px solid #2A2E42", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 140 }} />
+                      <div style={{ fontSize: 12, color: T.text3, marginBottom: 4 }}>Mois (Cantine)</div>
+                      <input value={form.mrMonth || ""} onChange={e => setForm({ ...form, mrMonth: e.target.value })} placeholder="ex: Avril 2025" style={{ background: T.surface2, color: T.text, border: `1px solid ${T.border}`, borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 140 }} />
                     </div>
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 16 }}>
                     {[["mrInscription","Reçu d'inscription"],["mrNonRed","Non-Redevance"],["mrCantine","Reçu Cantine"],["mrBiblio","Reçu Bibliothèque"]].map(([key, label]) => (
                       <label key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
                         <input type="checkbox" checked={!!form[key]} onChange={e => setForm({ ...form, [key]: e.target.checked })} />
-                        <span style={{ color: "#E8EAF0" }}>{label}</span>
+                        <span style={{ color: T.text }}>{label}</span>
                       </label>
                     ))}
                   </div>
@@ -3610,13 +3623,13 @@ export default function App() {
                     const m = new Date().toISOString().slice(0, 7);
                     const monthRec = cantine.filter(c => c.month === m);
                     return [
-                      { label: "Inscrits ce mois", value: monthRec.length, color: "#A29BFE" },
-                      { label: "Jours total", value: monthRec.reduce((a, c) => a + (c.days || 0), 0), color: "#00B894" },
-                      { label: "Recettes cantine", value: fmtCFA(monthRec.reduce((a, c) => a + (c.amountPaid || 0), 0)), color: "#FDCB6E" },
+                      { label: "Inscrits ce mois", value: monthRec.length, color: T.accent },
+                      { label: "Jours total", value: monthRec.reduce((a, c) => a + (c.days || 0), 0), color: T.accent },
+                      { label: "Recettes cantine", value: fmtCFA(monthRec.reduce((a, c) => a + (c.amountPaid || 0), 0)), color: T.amber },
                     ].map(s => <div key={s.label} style={S.stat}><div style={S.label}>{s.label}</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: s.color }}>{s.value}</div></div>);
                   })()}
                 </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={S.table}>
                       <thead><tr><th style={S.th}>Élève</th><th style={S.th}>Mois</th><th style={S.th}>Jours</th><th style={S.th}>Montant payé</th><th style={S.th}>Note</th><th style={S.th}>Actions</th></tr></thead>
@@ -3629,8 +3642,8 @@ export default function App() {
                               <td style={{ ...S.td, fontWeight: 500 }}>{stu?.name || "—"}</td>
                               <td style={S.td}>{c.month}</td>
                               <td style={S.td}>{c.days}</td>
-                              <td style={{ ...S.td, color: "#00B894", fontWeight: 600 }}>{fmtCFA(c.amountPaid || 0)}</td>
-                              <td style={{ ...S.td, fontSize: 12, color: "#636985" }}>{c.note || "—"}</td>
+                              <td style={{ ...S.td, color: T.accent, fontWeight: 600 }}>{fmtCFA(c.amountPaid || 0)}</td>
+                              <td style={{ ...S.td, fontSize: 12, color: T.text3 }}>{c.note || "—"}</td>
                               <td style={S.td}><Btn variant="danger" small onClick={() => askConfirm("Supprimer cette inscription ?", async () => { await saveCantine(cantine.filter(x => x.id !== c.id)); })}>Suppr.</Btn></td>
                             </tr>
                           );
@@ -3676,7 +3689,7 @@ export default function App() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                   <div>
                     <h3 style={{ marginBottom: 12 }}>Catalogue</h3>
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                       <table style={S.table}>
                         <thead><tr><th style={S.th}>Titre</th><th style={S.th}>Auteur</th><th style={S.th}>Dispo</th><th style={S.th}>Actions</th></tr></thead>
                         <tbody>
@@ -3699,7 +3712,7 @@ export default function App() {
                   </div>
                   <div>
                     <h3 style={{ marginBottom: 12 }}>Prêts en cours</h3>
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                       <table style={S.table}>
                         <thead><tr><th style={S.th}>Élève</th><th style={S.th}>Livre</th><th style={S.th}>Échéance</th><th style={S.th}>Actions</th></tr></thead>
                         <tbody>
@@ -3769,7 +3782,7 @@ export default function App() {
                   <h2>Annonces</h2>
                   <Btn onClick={() => { setForm({ msgSubject: "", msgBody: "", msgTo: "all" }); setModal("composeMsg"); }}>+ Nouveau message</Btn>
                 </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
                   {messages.length === 0 && <EmptyState icon="⊛" title="Aucun message" subtitle="Composez votre premier message" />}
                   {[...messages].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map(m => (
                     <div key={m.id} style={{ padding: "16px 20px", borderBottom: "1px solid #1C1F2E", cursor: "pointer", background: m.read ? "transparent" : "rgba(108,92,231,0.05)" }}
@@ -3777,11 +3790,11 @@ export default function App() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
                           <div style={{ fontWeight: m.read ? 400 : 700, fontSize: 14 }}>{m.subject}</div>
-                          <div style={{ fontSize: 12, color: "#636985", marginTop: 2 }}>De: {m.from} · À: {m.to === "all" ? "Tout le personnel" : m.to}</div>
+                          <div style={{ fontSize: 12, color: T.text3, marginTop: 2 }}>De: {m.from} · À: {m.to === "all" ? "Tout le personnel" : m.to}</div>
                         </div>
-                        <div style={{ fontSize: 11, color: "#636985" }}>{m.date}</div>
+                        <div style={{ fontSize: 11, color: T.text3 }}>{m.date}</div>
                       </div>
-                      <div style={{ fontSize: 12, color: "#9BA1B7", marginTop: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.body}</div>
+                      <div style={{ fontSize: 12, color: T.text2, marginTop: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.body}</div>
                     </div>
                   ))}
                 </div>
@@ -3807,8 +3820,8 @@ export default function App() {
                 {form.viewMsg && (
                   <Modal2 title={form.viewMsg.subject} onClose={() => setForm({ ...form, viewMsg: null })}
                     footer={<Btn variant="ghost" onClick={() => setForm({ ...form, viewMsg: null })}>Fermer</Btn>}>
-                    <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>De: {form.viewMsg.from} · À: {form.viewMsg.to === "all" ? "Tout le personnel" : form.viewMsg.to} · {form.viewMsg.date}</div>
-                    <p style={{ lineHeight: 1.8, color: "#9BA1B7", whiteSpace: "pre-wrap" }}>{form.viewMsg.body}</p>
+                    <div style={{ fontSize: 12, color: T.text3, marginBottom: 16 }}>De: {form.viewMsg.from} · À: {form.viewMsg.to === "all" ? "Tout le personnel" : form.viewMsg.to} · {form.viewMsg.date}</div>
+                    <p style={{ lineHeight: 1.8, color: T.text2, whiteSpace: "pre-wrap" }}>{form.viewMsg.body}</p>
                   </Modal2>
                 )}
               </div>
@@ -3877,10 +3890,10 @@ export default function App() {
                   {/* Summary cards */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 16, marginBottom: 28 }}>
                     {[
-                      ["Total collecté", fmtCFA(totalCollected), "#00B894"],
-                      ["Reste à collecter", fmtCFA(totalOutstanding), "#FF6B6B"],
-                      totalDue > 0 ? ["Taux de collecte", `${Math.min(100,Math.round(totalCollected/totalDue*100))}%`, "#A29BFE"] : null,
-                      ["Élèves soldés", `${fullyPaid} / ${students.filter(s => Number(classTuition[s.grade]||0)>0).length}`, "#FDCB6E"],
+                      ["Total collecté", fmtCFA(totalCollected), T.accent],
+                      ["Reste à collecter", fmtCFA(totalOutstanding), T.danger],
+                      totalDue > 0 ? ["Taux de collecte", `${Math.min(100,Math.round(totalCollected/totalDue*100))}%`, T.accent] : null,
+                      ["Élèves soldés", `${fullyPaid} / ${students.filter(s => Number(classTuition[s.grade]||0)>0).length}`, T.amber],
                     ].filter(Boolean).map(([l,v,c]) => (
                       <div key={l} style={{ ...S.stat, borderLeft: `3px solid ${c}` }}>
                         <div style={S.label}>{l}</div>
@@ -3890,17 +3903,17 @@ export default function App() {
                     {(role === "admin" || role === "comptable") && (
                       <div style={{ ...S.stat, cursor: "pointer", borderLeft: "3px solid #636985" }} onClick={() => setModal("classTuition")}>
                         <div style={S.label}>Frais par niveau</div>
-                        <div style={{ fontSize: 13, marginTop: 8, color: "#A29BFE" }}>⚙ Configurer</div>
+                        <div style={{ fontSize: 13, marginTop: 8, color: T.accent }}>⚙ Configurer</div>
                       </div>
                     )}
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, alignItems: "start" }}>
                     {/* Student list */}
-                    <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, overflow: "hidden" }}>
-                      <div style={{ padding: "12px 16px", borderBottom: "1px solid #2A2E42" }}>
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+                      <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.border}` }}>
                         <div style={S.search}>
-                          <span style={{ color: "#636985" }}>🔍</span>
+                          <span style={{ color: T.text3 }}>🔍</span>
                           <input style={S.searchInput} placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} />
                         </div>
                       </div>
@@ -3910,16 +3923,16 @@ export default function App() {
                           const paid = studentPayments.filter(p => p.studentId === s.id).reduce((a,p) => a + Number(p.amount||0), 0);
                           const pct = due > 0 ? Math.min(100, Math.round(paid/due*100)) : null;
                           const isActive = paySelId === s.id;
-                          let statusColor = "#636985";
-                          if (due > 0) { statusColor = paid >= due ? "#00B894" : paid > 0 ? "#FDCB6E" : "#FF6B6B"; }
+                          let statusColor = T.text3;
+                          if (due > 0) { statusColor = paid >= due ? T.accent : paid > 0 ? T.amber : T.danger; }
                           return (
                             <div key={s.id}
-                              style={{ padding: "10px 16px", cursor: "pointer", borderLeft: `3px solid ${isActive ? "#6C5CE7" : "transparent"}`, background: isActive ? "rgba(108,92,231,0.1)" : "transparent", borderBottom: "1px solid #2A2E42" }}
+                              style={{ padding: "10px 16px", cursor: "pointer", borderLeft: `3px solid ${isActive ? T.accent : "transparent"}`, background: isActive ? "rgba(108,92,231,0.1)" : "transparent", borderBottom: `1px solid ${T.border}` }}
                               onClick={() => setPaySelId(s.id)}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: "#E8EAF0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
-                              <div style={{ fontSize: 11, color: "#636985", marginTop: 2 }}>{s.grade}</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+                              <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>{s.grade}</div>
                               {due > 0 && (
-                                <div style={{ marginTop: 5, height: 4, background: "#1C1F2E", borderRadius: 2, overflow: "hidden" }}>
+                                <div style={{ marginTop: 5, height: 4, background: T.surface2, borderRadius: 2, overflow: "hidden" }}>
                                   <div style={{ width: `${pct}%`, height: "100%", background: statusColor, borderRadius: 2, transition: "width 0.3s" }} />
                                 </div>
                               )}
@@ -3940,11 +3953,11 @@ export default function App() {
                       const paid = pmts.reduce((a,p) => a + Number(p.amount||0), 0);
                       const remaining = Math.max(0, due - paid);
                       return (
-                        <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24 }}>
+                        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 24 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
                             <div>
                               <h3 style={{ fontSize: 18, marginBottom: 4 }}>{selStu.name}</h3>
-                              <div style={{ fontSize: 12, color: "#636985" }}>{selStu.grade}{selStu.parent ? ` · ${selStu.parent}` : ""}</div>
+                              <div style={{ fontSize: 12, color: T.text3 }}>{selStu.grade}{selStu.parent ? ` · ${selStu.parent}` : ""}</div>
                             </div>
                             {due > 0 && (
                               <span style={S.badge(paid >= due ? "green" : paid > 0 ? "amber" : "red")}>
@@ -3955,17 +3968,17 @@ export default function App() {
 
                           {/* Summary cards */}
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: 12, marginBottom: 20 }}>
-                            <div style={{ background: "#1C1F2E", borderRadius: 8, padding: "12px 16px" }}>
-                              <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 4 }}>Total payé</div>
-                              <div style={{ fontSize: 16, fontWeight: 700, color: "#00B894" }}>{fmtCFA(paid)}</div>
+                            <div style={{ background: T.surface2, borderRadius: 8, padding: "12px 16px" }}>
+                              <div style={{ fontSize: 11, color: T.text3, textTransform: "uppercase", marginBottom: 4 }}>Total payé</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, color: T.accent }}>{fmtCFA(paid)}</div>
                             </div>
                             {due > 0 && <>
-                              <div style={{ background: "#1C1F2E", borderRadius: 8, padding: "12px 16px" }}>
-                                <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 4 }}>Reste</div>
-                                <div style={{ fontSize: 16, fontWeight: 700, color: remaining > 0 ? "#FF6B6B" : "#00B894" }}>{fmtCFA(remaining)}</div>
+                              <div style={{ background: T.surface2, borderRadius: 8, padding: "12px 16px" }}>
+                                <div style={{ fontSize: 11, color: T.text3, textTransform: "uppercase", marginBottom: 4 }}>Reste</div>
+                                <div style={{ fontSize: 16, fontWeight: 700, color: remaining > 0 ? T.danger : T.accent }}>{fmtCFA(remaining)}</div>
                               </div>
-                              <div style={{ background: "#1C1F2E", borderRadius: 8, padding: "12px 16px" }}>
-                                <div style={{ fontSize: 11, color: "#636985", textTransform: "uppercase", marginBottom: 4 }}>Total dû</div>
+                              <div style={{ background: T.surface2, borderRadius: 8, padding: "12px 16px" }}>
+                                <div style={{ fontSize: 11, color: T.text3, textTransform: "uppercase", marginBottom: 4 }}>Total dû</div>
                                 <div style={{ fontSize: 16, fontWeight: 700 }}>{fmtCFA(due)}</div>
                               </div>
                             </>}
@@ -3973,8 +3986,8 @@ export default function App() {
 
                           {/* Installments table */}
                           <div style={{ marginBottom: 20 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#636985", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Historique des versements</div>
-                            {pmts.length === 0 && <div style={{ fontSize: 13, color: "#636985", padding: "16px 0" }}>Aucun versement enregistré.</div>}
+                            <div style={{ fontSize: 12, fontWeight: 600, color: T.text3, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Historique des versements</div>
+                            {pmts.length === 0 && <div style={{ fontSize: 13, color: T.text3, padding: "16px 0" }}>Aucun versement enregistré.</div>}
                             {pmts.length > 0 && (
                               <table style={S.table}>
                                 <thead><tr>
@@ -3988,7 +4001,7 @@ export default function App() {
                                   {pmts.map((p,i) => (
                                     <tr key={p.id}>
                                       <td style={S.td}>{i+1}</td>
-                                      <td style={{ ...S.td, color: "#00B894", fontWeight: 600 }}>{fmtCFA(Number(p.amount))}</td>
+                                      <td style={{ ...S.td, color: T.accent, fontWeight: 600 }}>{fmtCFA(Number(p.amount))}</td>
                                       <td style={S.td}>{p.date ? new Date(p.date).toLocaleDateString("fr-FR") : "—"}</td>
                                       <td style={S.td}>{p.note||"—"}</td>
                                       <td style={{ ...S.td, display: "flex", gap: 8 }}>
@@ -4006,8 +4019,8 @@ export default function App() {
 
                           {/* Add payment */}
                           {(role === "admin" || role === "comptable" || role === "secretaire") && (
-                            <div style={{ borderTop: "1px solid #2A2E42", paddingTop: 20 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#636985", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>Enregistrer un versement</div>
+                            <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 20 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: T.text3, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>Enregistrer un versement</div>
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                                 <div>
                                   <div style={S.label}>Montant (FCFA)</div>
@@ -4044,10 +4057,10 @@ export default function App() {
                   {modal === "classTuition" && (
                     <Modal2 title="Frais de scolarité par niveau" onClose={() => setModal(null)}
                       footer={<Btn variant="ghost" onClick={() => setModal(null)}>Fermer</Btn>}>
-                      <div style={{ fontSize: 12, color: "#636985", marginBottom: 16 }}>Définissez le montant annuel dû par niveau.</div>
+                      <div style={{ fontSize: 12, color: T.text3, marginBottom: 16 }}>Définissez le montant annuel dû par niveau.</div>
                       {NIV.map(n => (
                         <div key={n} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "center", marginBottom: 10 }}>
-                          <div style={{ fontSize: 13, color: "#E8EAF0" }}>{n}</div>
+                          <div style={{ fontSize: 13, color: T.text }}>{n}</div>
                           <input style={{ ...S.input, marginTop: 0 }} type="number" placeholder="0" value={classTuition[n]||""} onChange={async e => {
                             const updated = { ...classTuition, [n]: e.target.value ? Number(e.target.value) : 0 };
                             await saveClassTuition(updated);
@@ -4065,30 +4078,30 @@ export default function App() {
               <div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16, marginBottom: 28 }}>
                   <div style={S.stat}><div style={S.label}>Forfait</div><div style={{ fontSize: 22, fontWeight: 700, marginTop: 8 }}>{PLANS[school?.plan]?.name || "—"}</div></div>
-                  <div style={S.stat}><div style={S.label}>Jours restants</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: dl <= 0 ? "#FF6B6B" : dl <= 7 ? "#FDCB6E" : "#00B894" }}>{Math.max(0, dl)}</div>
-                    <div style={{ marginTop: 8, height: 6, background: "#1C1F2E", borderRadius: 3, overflow: "hidden" }}><div style={{ width: `${Math.min(100, Math.max(0, (dl / 30) * 100))}%`, height: "100%", background: dl <= 7 ? "#FDCB6E" : "#00B894", borderRadius: 3, transition: "width 0.3s ease" }} /></div>
+                  <div style={S.stat}><div style={S.label}>Jours restants</div><div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: dl <= 0 ? T.danger : dl <= 7 ? T.amber : T.accent }}>{Math.max(0, dl)}</div>
+                    <div style={{ marginTop: 8, height: 6, background: T.surface2, borderRadius: 3, overflow: "hidden" }}><div style={{ width: `${Math.min(100, Math.max(0, (dl / 30) * 100))}%`, height: "100%", background: dl <= 7 ? T.amber : T.accent, borderRadius: 3, transition: "width 0.3s ease" }} /></div>
                   </div>
-                  <div style={S.stat}><div style={S.label}>Échéance</div><div style={{ fontSize: 16, fontWeight: 600, marginTop: 8, color: dl <= 0 ? "#FF6B6B" : "#E8EAF0" }}>{school?.subEnd || "—"}</div></div>
+                  <div style={S.stat}><div style={S.label}>Échéance</div><div style={{ fontSize: 16, fontWeight: 600, marginTop: 8, color: dl <= 0 ? T.danger : T.text }}>{school?.subEnd || "—"}</div></div>
                 </div>
-                <div style={{ background: "#161822", border: "1px solid #2A2E42", borderRadius: 10, padding: 24 }}>
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, padding: 24 }}>
                   <h3 style={{ marginBottom: 16 }}>Forfaits Disponibles</h3>
                   <div className="eos-plan-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
                     {Object.entries(PLANS).map(([k, v]) => (
-                      <div key={k} style={{ background: school?.plan === k ? "rgba(108,92,231,0.12)" : "#1C1F2E", border: `1px solid ${school?.plan === k ? "#6C5CE7" : "#2A2E42"}`, borderRadius: 10, padding: 20, textAlign: "center" }}>
+                      <div key={k} style={{ background: school?.plan === k ? "rgba(108,92,231,0.12)" : T.surface2, border: `1px solid ${school?.plan === k ? T.accent : "#2A2E42"}`, borderRadius: 10, padding: 20, textAlign: "center" }}>
                         <div style={{ fontSize: 14, fontWeight: 700 }}>{v.name}</div>
                         {v.priceMonth > 0 ? (
                           <>
-                            <div style={{ marginTop: 10, fontSize: 20, fontWeight: 700, color: "#A29BFE" }}>{fmtCFA(v.priceMonth)}<span style={{ fontSize: 11, fontWeight: 400, color: "#636985" }}>/mois</span></div>
-                            <div style={{ fontSize: 11, color: "#636985", marginTop: 2 }}>{fmtCFA(v.priceYear)}/an</div>
+                            <div style={{ marginTop: 10, fontSize: 20, fontWeight: 700, color: T.accent }}>{fmtCFA(v.priceMonth)}<span style={{ fontSize: 11, fontWeight: 400, color: T.text3 }}>/mois</span></div>
+                            <div style={{ fontSize: 11, color: T.text3, marginTop: 2 }}>{fmtCFA(v.priceYear)}/an</div>
                           </>
                         ) : (
-                          <div style={{ marginTop: 10, fontSize: 16, fontWeight: 700, color: "#00B894" }}>Gratuit</div>
+                          <div style={{ marginTop: 10, fontSize: 16, fontWeight: 700, color: T.accent }}>Gratuit</div>
                         )}
-                        <div style={{ marginTop: 8, fontSize: 11, color: "#9BA1B7" }}>{v.maxStudents ? `≤ ${v.maxStudents} élèves` : "Élèves illimités"}</div>
-                        <div style={{ marginTop: 8, borderTop: "1px solid #2A2E42", paddingTop: 8 }}>
-                          {v.features.map(f => <div key={f} style={{ fontSize: 11, color: "#636985", marginTop: 4 }}>• {f}</div>)}
+                        <div style={{ marginTop: 8, fontSize: 11, color: T.text2 }}>{v.maxStudents ? `≤ ${v.maxStudents} élèves` : "Élèves illimités"}</div>
+                        <div style={{ marginTop: 8, borderTop: `1px solid ${T.border}`, paddingTop: 8 }}>
+                          {v.features.map(f => <div key={f} style={{ fontSize: 11, color: T.text3, marginTop: 4 }}>• {f}</div>)}
                         </div>
-                        {school?.plan === k && <div style={{ marginTop: 10, fontSize: 11, color: "#A29BFE", fontWeight: 600 }}>ACTUEL</div>}
+                        {school?.plan === k && <div style={{ marginTop: 10, fontSize: 11, color: T.accent, fontWeight: 600 }}>ACTUEL</div>}
                       </div>
                     ))}
                   </div>
@@ -4135,11 +4148,11 @@ export default function App() {
                 </div>
               </div>
               {form.testResult && (
-                <div style={{ marginBottom: 16, padding: 10, borderRadius: 6, fontSize: 13, background: form.testResult === "ok" ? "rgba(0,184,148,0.12)" : form.testResult === "fail" ? "rgba(255,107,107,0.12)" : "rgba(108,92,231,0.12)", color: form.testResult === "ok" ? "#00B894" : form.testResult === "fail" ? "#FF6B6B" : "#A29BFE" }}>
+                <div style={{ marginBottom: 16, padding: 10, borderRadius: 6, fontSize: 13, background: form.testResult === "ok" ? "rgba(0,184,148,0.12)" : form.testResult === "fail" ? "rgba(255,107,107,0.12)" : "rgba(108,92,231,0.12)", color: form.testResult === "ok" ? T.accent : form.testResult === "fail" ? T.danger : T.accent }}>
                   {form.testResult === "ok" ? "Connexion réussie" : form.testResult === "fail" ? "Impossible de joindre le serveur" : "Test en cours..."}
                 </div>
               )}
-              <div style={{ fontSize: 12, color: "#636985", lineHeight: 1.6 }}>
+              <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6 }}>
                 {form.mode === "local"
                   ? "Entrez l'adresse IP et le port du serveur sur votre réseau local. Ex : http://192.168.1.100:4000"
                   : "Entrez l'URL complète de votre serveur cloud. Ex : https://ecoleos.example.com"}
@@ -4147,7 +4160,7 @@ export default function App() {
             </>
           )}
           {form.mode === "offline" && (
-            <div style={{ fontSize: 12, color: "#636985", lineHeight: 1.6, padding: 12, background: "#1C1F2E", borderRadius: 6 }}>
+            <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6, padding: 12, background: T.surface2, borderRadius: 6 }}>
               En mode hors ligne, toutes les données sont stockées localement sur cet appareil. Utilisez l'export/import pour partager les données entre appareils.
             </div>
           )}
@@ -4171,14 +4184,14 @@ export default function App() {
           {form.importError && <div style={S.err}>{form.importError}</div>}
           {form.importSummary && (
             <div>
-              <div style={{ marginBottom: 16, padding: 16, background: "#1C1F2E", borderRadius: 8, border: "1px solid #2A2E42" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#E8EAF0", marginBottom: 8 }}>Aperçu du fichier</div>
-                <div style={{ fontSize: 12, color: "#9BA1B7", lineHeight: 1.8 }}>
-                  <div>Établissement : <strong style={{ color: "#E8EAF0" }}>{form.importSummary.school}</strong></div>
-                  <div>Élèves : <strong style={{ color: "#E8EAF0" }}>{form.importSummary.students}</strong></div>
-                  <div>Personnel : <strong style={{ color: "#E8EAF0" }}>{form.importSummary.staff}</strong></div>
-                  <div>Transactions : <strong style={{ color: "#E8EAF0" }}>{form.importSummary.finances}</strong></div>
-                  <div>Budgets : <strong style={{ color: "#E8EAF0" }}>{form.importSummary.budgets}</strong></div>
+              <div style={{ marginBottom: 16, padding: 16, background: T.surface2, borderRadius: 8, border: `1px solid ${T.border}` }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 8 }}>Aperçu du fichier</div>
+                <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.8 }}>
+                  <div>Établissement : <strong style={{ color: T.text }}>{form.importSummary.school}</strong></div>
+                  <div>Élèves : <strong style={{ color: T.text }}>{form.importSummary.students}</strong></div>
+                  <div>Personnel : <strong style={{ color: T.text }}>{form.importSummary.staff}</strong></div>
+                  <div>Transactions : <strong style={{ color: T.text }}>{form.importSummary.finances}</strong></div>
+                  <div>Budgets : <strong style={{ color: T.text }}>{form.importSummary.budgets}</strong></div>
                 </div>
               </div>
               <div style={{ marginBottom: 16 }}>
@@ -4189,7 +4202,7 @@ export default function App() {
                 </select>
               </div>
               {form.importMode === "replace" && (
-                <div style={{ padding: 10, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 6, fontSize: 12, color: "#FF6B6B" }}>
+                <div style={{ padding: 10, background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 6, fontSize: 12, color: T.danger }}>
                   Les données actuelles seront remplacées par celles du fichier.
                 </div>
               )}

@@ -1,3 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:          #060A10;
+  --surface:     #0B1018;
+  --surface2:    #101520;
+  --border:      #1A2235;
+  --border2:     #243048;
+  --accent:      #00D9B8;
+  --accent-dim:  rgba(0, 217, 184, 0.10);
+  --accent-glow: rgba(0, 217, 184, 0.22);
+  --text:        #EFF3FA;
+  --text2:       #7A8BA6;
+  --text3:       #3D4F68;
+  --danger:      #FF4560;
+  --danger-dim:  rgba(255, 69, 96, 0.12);
+  --amber:       #FFB547;
+  --amber-dim:   rgba(255, 181, 71, 0.12);
+  --success:     #00D9B8;
+  --radius:      8px;
+  --radius-lg:   14px;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -5,14 +28,102 @@
 }
 
 html, body, #root {
-  background: #0F1117;
-  color: #E8EAF0;
+  background: var(--bg);
+  color: var(--text);
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  font-family: 'Sora', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-body {
-  margin: 0;
-  padding: 0;
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* Selection */
+::selection { background: var(--accent-glow); color: var(--text); }
+
+/* Focus ring */
+:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Inputs */
+input, select, textarea {
+  font-family: 'Sora', system-ui, sans-serif;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-dim) !important;
+}
+
+/* Buttons */
+button {
+  font-family: 'Sora', system-ui, sans-serif;
+  transition: opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { opacity: 0.88; }
+button:active:not(:disabled) { transform: scale(0.98); }
+
+/* Monospace data class */
+.mono { font-family: 'JetBrains Mono', monospace; letter-spacing: -0.3px; }
+
+/* Nav item hover */
+.eos-nav-item { transition: all 0.15s ease; }
+.eos-nav-item:hover { background: rgba(255,255,255,0.03) !important; color: var(--text) !important; }
+
+/* Stat card hover */
+.eos-stat:hover { border-color: var(--border2) !important; }
+
+/* Row hover */
+.eos-tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* Card entry animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse-accent {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* Accent line decoration on cards */
+.eos-accent-top {
+  border-top: 1.5px solid var(--accent) !important;
+}
+
+@media (max-width: 1024px) {
+  .eos-card-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .eos-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 768px) {
+  .eos-sidebar { transform: translateX(-240px) !important; }
+  .eos-sidebar.open { transform: translateX(0) !important; }
+  .eos-main { margin-left: 0 !important; }
+  .eos-topbar { padding: 0 16px !important; }
+  .eos-content { padding: 16px !important; overflow-x: hidden !important; }
+  .eos-super-grid { grid-template-columns: 1fr !important; }
+  .eos-plan-grid { grid-template-columns: 1fr !important; }
+  .eos-card-grid { grid-template-columns: 1fr !important; }
+  .eos-stat-grid { grid-template-columns: 1fr !important; }
+  .eos-table { display: block !important; overflow-x: auto !important; }
+  .eos-table table { width: 100% !important; }
+  .eos-modal-card { width: 95% !important; max-height: 90vh !important; }
+  body { overflow-x: hidden !important; }
+}
+@media (max-width: 480px) {
+  .eos-topbar { padding: 0 12px !important; height: 56px !important; }
+  .eos-content { padding: 12px !important; }
+  .eos-plan-grid { grid-template-columns: 1fr !important; }
+  .eos-card { padding: 16px !important; width: 100% !important; max-width: 100% !important; }
+  input, button, select, textarea { font-size: 16px !important; }
+  .eos-modal-card { padding: 20px 16px !important; }
 }
