@@ -3063,6 +3063,55 @@ export default function App() {
                   </div>
                 )}
 
+                {/* Actual transactions for the year */}
+                {(() => {
+                  const yearPrefix = String(budgetYear);
+                  const yearFin = finances.filter(t => t.date?.startsWith(yearPrefix));
+                  const payRows = studentPayments.filter(p => p.date?.startsWith(yearPrefix)).map(p => ({
+                    id: "pay_" + p.id, type: "income", category: "Frais de scolarité",
+                    label: p.description || ("Paiement " + (students.find(s => s.id === p.studentId)?.name || "")),
+                    amount: Number(p.amount || 0), date: p.date, method: p.method,
+                  }));
+                  const allTxns = [...yearFin, ...payRows].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+                  const incomes = allTxns.filter(t => t.type === "income");
+                  const expenses = allTxns.filter(t => t.type === "expense");
+                  const totalInc = incomes.reduce((s, t) => s + t.amount, 0);
+                  const totalExp = expenses.reduce((s, t) => s + t.amount, 0);
+
+                  const TxnTable = ({ rows, color, total, label }) => (
+                    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+                      <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <h3 style={{ color }}>{label} réels ({budgetYear})</h3>
+                        <span style={{ fontWeight: 700, color, fontSize: 16 }}>{fmtCFA(total)}</span>
+                      </div>
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={S.table}>
+                          <thead><tr><th style={S.th}>Date</th><th style={S.th}>Libellé</th><th style={S.th}>Catégorie</th><th style={S.th}>Méthode</th><th style={{ ...S.th, textAlign: "right" }}>Montant</th></tr></thead>
+                          <tbody>
+                            {rows.map(t => (
+                              <tr key={t.id} className="eos-tr">
+                                <td style={S.td}>{t.date || "—"}</td>
+                                <td style={{ ...S.td, color: T.text, fontWeight: 500 }}>{t.label || t.description || "—"}</td>
+                                <td style={S.td}>{t.category || "—"}</td>
+                                <td style={S.td}>{t.method || "—"}</td>
+                                <td style={{ ...S.td, textAlign: "right", fontWeight: 700, color }}>{fmtCFA(t.amount)}</td>
+                              </tr>
+                            ))}
+                            {rows.length === 0 && <tr><td colSpan={5} style={{ ...S.td, textAlign: "center", color: T.text3 }}>Aucune transaction</td></tr>}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+
+                  return (
+                    <>
+                      <TxnTable rows={incomes} color={T.accent} total={totalInc} label="Revenus" />
+                      <TxnTable rows={expenses} color={T.danger} total={totalExp} label="Dépenses" />
+                    </>
+                  );
+                })()}
+
                 {/* Budget entries table */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                   <SearchBar value={search} onChange={setSearch} placeholder="Rechercher un budget..." />
