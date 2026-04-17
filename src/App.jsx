@@ -327,6 +327,7 @@ export default function App() {
   const [zoom, setZoom] = useState(() => Number(localStorage.getItem("eos3_zoom") || 100));
   const [theme, setTheme] = useState(() => localStorage.getItem("eos3_theme") || "dark");
   const [schoolLogo, setSchoolLogo] = useState(null);
+  const [seatsPerClass, setSeatsPerClass] = useState(40);
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [pwErr, setPwErr] = useState("");
   const [pwOk, setPwOk] = useState(false);
@@ -537,6 +538,7 @@ export default function App() {
     const tuit = await db.get("eos3_tuition_" + id); setClassTuition(tuit || {});
     const par = await db.get("eos3_par_" + id); setParentCodes(par || []);
     const logo = await db.get("eos3_logo_" + id); setSchoolLogo(logo || null);
+    const seats = await db.get("eos3_seats_" + id); setSeatsPerClass(seats || 40);
     setLoading(false);
   }, []);
 
@@ -1734,18 +1736,30 @@ export default function App() {
 
                     {/* Grade Distribution Chart */}
                     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Répartition par Niveau</h3></div>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <h3>Répartition par Niveau</h3>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.text2 }}>
+                          Places/classe
+                          <input
+                            type="number" min={1} max={999}
+                            value={seatsPerClass}
+                            onChange={e => { const v = Math.max(1, Number(e.target.value)); setSeatsPerClass(v); db.set("eos3_seats_" + school?.id, v); }}
+                            style={{ width: 60, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 6, color: T.text, padding: "3px 8px", fontSize: 12 }}
+                          />
+                        </label>
+                      </div>
                       <div style={{ padding: 20 }}>
                         {NIV.map(n => {
                           const c = students.filter(s => s.grade === n && s.status === "actif").length;
-                          const max = Math.max(...NIV.map(nn => students.filter(s => s.grade === nn && s.status === "actif").length), 1);
+                          const pct = Math.min((c / seatsPerClass) * 100, 100);
+                          const over = c > seatsPerClass;
                           return (
                             <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                               <span style={{ width: 90, fontSize: 13, color: T.text2 }}>{n}</span>
                               <div style={{ flex: 1, height: 24, background: T.surface2, borderRadius: 4, overflow: "hidden" }}>
-                                <div style={{ width: `${(c / max) * 100}%`, height: "100%", background: `linear-gradient(90deg,${T.accent},${T.accentGlow})`, borderRadius: 4, transition: "width 0.3s ease" }} />
+                                <div style={{ width: `${pct}%`, height: "100%", background: over ? `linear-gradient(90deg,${T.danger},#ff6b85)` : `linear-gradient(90deg,${T.accent},${T.accentGlow})`, borderRadius: 4, transition: "width 0.3s ease" }} />
                               </div>
-                              <span style={{ width: 28, fontSize: 13, fontWeight: 600, textAlign: "right" }}>{c}</span>
+                              <span style={{ width: 52, fontSize: 12, fontWeight: 600, textAlign: "right", color: over ? T.danger : T.text }}>{c}/{seatsPerClass}</span>
                             </div>
                           );
                         })}
@@ -1835,18 +1849,30 @@ export default function App() {
 
                     {/* Grade Distribution */}
                     <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}><h3>Répartition par Niveau</h3></div>
+                      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <h3>Répartition par Niveau</h3>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.text2 }}>
+                          Places/classe
+                          <input
+                            type="number" min={1} max={999}
+                            value={seatsPerClass}
+                            onChange={e => { const v = Math.max(1, Number(e.target.value)); setSeatsPerClass(v); db.set("eos3_seats_" + school?.id, v); }}
+                            style={{ width: 60, background: T.surface2, border: `1px solid ${T.border}`, borderRadius: 6, color: T.text, padding: "3px 8px", fontSize: 12 }}
+                          />
+                        </label>
+                      </div>
                       <div style={{ padding: 20 }}>
                         {NIV.map(n => {
                           const c = students.filter(s => s.grade === n && s.status === "actif").length;
-                          const max = Math.max(...NIV.map(nn => students.filter(s => s.grade === nn && s.status === "actif").length), 1);
+                          const pct = Math.min((c / seatsPerClass) * 100, 100);
+                          const over = c > seatsPerClass;
                           return (
                             <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                               <span style={{ width: 90, fontSize: 13, color: T.text2 }}>{n}</span>
                               <div style={{ flex: 1, height: 24, background: T.surface2, borderRadius: 4, overflow: "hidden" }}>
-                                <div style={{ width: `${(c / max) * 100}%`, height: "100%", background: `linear-gradient(90deg,${T.accent},${T.accentGlow})`, borderRadius: 4, transition: "width 0.3s ease" }} />
+                                <div style={{ width: `${pct}%`, height: "100%", background: over ? `linear-gradient(90deg,${T.danger},#ff6b85)` : `linear-gradient(90deg,${T.accent},${T.accentGlow})`, borderRadius: 4, transition: "width 0.3s ease" }} />
                               </div>
-                              <span style={{ width: 28, fontSize: 13, fontWeight: 600, textAlign: "right" }}>{c}</span>
+                              <span style={{ width: 52, fontSize: 12, fontWeight: 600, textAlign: "right", color: over ? T.danger : T.text }}>{c}/{seatsPerClass}</span>
                             </div>
                           );
                         })}
