@@ -1539,7 +1539,10 @@ export default function App() {
         {/* Sidebar */}
         <aside className={`eos-sidebar${sidebarOpen ? " open" : ""}`} style={{ ...S.sidebar, ...(isMobile && !sidebarOpen ? S.sidebarHidden : {}) }}>
           <div style={{ padding: 20, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 9, background: T.accentDim, border: `1px solid ${T.accentGlow}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: T.accent, fontFamily: T.mono }}>{(school?.code || "ÉO").slice(0, 2)}</div>
+            {schoolLogo
+              ? <img src={schoolLogo} alt="logo" style={{ width: 36, height: 36, borderRadius: 9, objectFit: "contain", border: `1px solid ${T.border}`, background: T.surface2 }} />
+              : <div style={{ width: 36, height: 36, borderRadius: 9, background: T.accentDim, border: `1px solid ${T.accentGlow}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: T.accent, fontFamily: T.mono }}>{(school?.code || "ÉO").slice(0, 2)}</div>
+            }
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{school?.name || "—"}</div>
               <div style={{ fontSize: 11, color: T.text3 }}>{school?.city || ""} · {PLANS[school?.plan]?.name || "—"}</div>
