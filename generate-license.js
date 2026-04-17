@@ -17,7 +17,13 @@
 
 const crypto = require("crypto");
 
-const SECRET = "ecoleos_license_secret_change_me_in_production_2025";
+const SECRET = process.env.ECOLEOS_LICENSE_SECRET;
+if (!SECRET || SECRET.length < 32) {
+  console.error("ECOLEOS_LICENSE_SECRET env var is required (min 32 chars).");
+  console.error("Set it before running, e.g.:");
+  console.error("  ECOLEOS_LICENSE_SECRET=... node generate-license.js ...");
+  process.exit(1);
+}
 const PLAN_LABELS = { "0": "Essai", "1": "Basique", "2": "Standard", "3": "Premium" };
 
 const [,, school, plan, type, devices, expiry] = process.argv;

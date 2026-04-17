@@ -5,8 +5,11 @@ import School from "../models/School.js";
 import Staff from "../models/Staff.js";
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || "change_me_to_a_random_string_in_production";
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "change_me_to_another_random_string";
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+  throw new Error("JWT_SECRET and JWT_REFRESH_SECRET are required");
+}
 
 function signTokens(payload) {
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
@@ -77,8 +80,11 @@ router.post("/refresh", (req, res) => {
 router.post("/super-login", async (req, res) => {
   try {
     const { username, password } = req.body;
-    const superUser = process.env.SUPER_USER || "superadmin";
-    const superPass = process.env.SUPER_PASS || "super2025";
+    const superUser = process.env.SUPER_USER;
+    const superPass = process.env.SUPER_PASS;
+    if (!superUser || !superPass) {
+      return res.status(500).json({ error: "Super admin non configuré" });
+    }
 
     if (username === superUser && password === superPass) {
       const payload = { userId: "super", schoolId: null, role: "superadmin", name: "Super Admin" };

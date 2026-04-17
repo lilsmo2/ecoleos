@@ -5,6 +5,19 @@ import { authenticate, roleGuard } from "../middleware/auth.js";
 
 const router = Router();
 
+// Fields clients are permitted to write via POST/PUT.
+// Never includes _id or anything that would escalate privileges implicitly.
+const CREATE_FIELDS = ["name", "city", "code", "adminUser", "plan", "subEnd", "subStatus"];
+const UPDATE_FIELDS = ["name", "city", "adminUser", "plan", "subEnd", "subStatus"];
+
+function pick(body, fields) {
+  const out = {};
+  for (const k of fields) {
+    if (Object.prototype.hasOwnProperty.call(body, k)) out[k] = body[k];
+  }
+  return out;
+}
+
 // GET /api/schools — list all (superadmin)
 router.get("/", authenticate, roleGuard(["superadmin"]), async (req, res) => {
   try {
@@ -15,9 +28,12 @@ router.get("/", authenticate, roleGuard(["superadmin"]), async (req, res) => {
   }
 });
 
-// GET /api/schools/:id — get one school
+// GET /api/schools/:id — get one school (superadmin, or the school's own admin)
 router.get("/:id", authenticate, async (req, res) => {
   try {
+    if (req.user.role !== "superadmin" && String(req.user.schoolId) !== String(req.params.id)) {
+      return res.status(403).json({ error: "Accès refusé" });
+    }
     const school = await School.findById(req.params.id).lean();
     if (!school) return res.status(404).json({ error: "Établissement introuvable" });
     res.json({ data: school });
@@ -29,11 +45,16 @@ router.get("/:id", authenticate, async (req, res) => {
 // POST /api/schools — create (superadmin)
 router.post("/", authenticate, roleGuard(["superadmin"]), async (req, res) => {
   try {
-    const { _id, name, city, code, adminUser, adminPass, plan, subEnd, subStatus } = req.body;
+    const data = pick(req.body, CREATE_FIELDS);
+    if (!data.code) return res.status(400).json({ error: "Code requis" });
+    const { adminPass } = req.body;
     const adminPassHash = adminPass ? await bcrypt.hash(adminPass, 10) : undefined;
     const school = await School.create({
-      _id, name, city, code: code.toUpperCase(), adminUser, adminPassHash,
-      plan: plan || "essai", subEnd, subStatus: subStatus || "actif",
+      ...data,
+      code: data.code.toUpperCase(),
+      adminPassHash,
+      plan: data.plan || "essai",
+      subStatus: data.subStatus || "actif",
     });
     res.status(201).json({ data: school });
   } catch (err) {
@@ -41,13 +62,16 @@ router.post("/", authenticate, roleGuard(["superadmin"]), async (req, res) => {
   }
 });
 
-// PUT /api/schools/:id — update
+// PUT /api/schools/:id — update (superadmin, or the school's own admin)
 router.put("/:id", authenticate, roleGuard(["superadmin", "admin"]), async (req, res) => {
   try {
-    const updates = { ...req.body };
-    if (updates.adminPass) {
-      updates.adminPassHash = await bcrypt.hash(updates.adminPass, 10);
-      delete updates.adminPass;
+    // An admin may only update their own school. Superadmin may update any.
+    if (req.user.role === "admin" && String(req.user.schoolId) !== String(req.params.id)) {
+      return res.status(403).json({ error: "Accès refusé" });
+    }
+    const updates = pick(req.body, UPDATE_FIELDS);
+    if (req.body.adminPass) {
+      updates.adminPassHash = await bcrypt.hash(req.body.adminPass, 10);
     }
     const school = await School.findByIdAndUpdate(req.params.id, updates, { new: true }).lean();
     if (!school) return res.status(404).json({ error: "Établissement introuvable" });

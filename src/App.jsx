@@ -13,6 +13,17 @@ async function verifyPassword(plain, hash) {
   return (await hashPassword(plain)) === hash;
 }
 
+// Generate a random initial password for seed schools instead of using "admin123".
+// The password is printed to the console once so the operator can record it.
+function randomPassword(len = 16) {
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijkmnpqrstuvwxyz";
+  let out = "";
+  for (let i = 0; i < len; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out;
+}
+
 // ── ID generation ──
 const genId = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
 
@@ -317,8 +328,14 @@ export default function App() {
       if (saved) {
         setSchools(saved);
       } else {
-        const defaultHash = await hashPassword("admin123");
-        const initialized = INIT_SCHOOLS.map(s => ({ ...s, adminPassHash: defaultHash }));
+        // First run: generate a unique random admin password per seed school
+        // and print them once so the operator can log in and change them.
+        const initialized = await Promise.all(INIT_SCHOOLS.map(async (s) => {
+          const pw = randomPassword(16);
+          // eslint-disable-next-line no-console
+          console.warn(`[ÉcoleOS] Initial admin password for ${s.code}: ${pw}`);
+          return { ...s, adminPassHash: await hashPassword(pw) };
+        }));
         setSchools(initialized);
         await db.set("eos3_schools", initialized);
       }
@@ -491,18 +508,15 @@ export default function App() {
     const dl = Math.ceil((new Date(sc.subEnd) - new Date()) / 86400000);
     const expired = dl <= 0 || sc.subStatus === "suspendu";
 
-    // Admin login
+    // Admin login — hashed passwords only; no plaintext fallback.
     if (uid === sc.adminUser) {
       let match = false;
       try {
         if (sc.adminPassHash) {
           match = await verifyPassword(pwd, sc.adminPassHash);
-        } else {
-          // Legacy fallback: plaintext adminPass or default
-          match = pwd === (sc.adminPass || "admin123");
         }
-      } catch (e) {
-        match = pwd === (sc.adminPass || "admin123");
+      } catch {
+        match = false;
       }
       if (match) {
         setUser({ name: "Administrateur", role: "admin" });
@@ -519,9 +533,9 @@ export default function App() {
     if (m) {
       let match = false;
       try {
-        match = m.passHash ? await verifyPassword(pwd, m.passHash) : pwd === m.password;
-      } catch (e) {
-        match = pwd === m.password;
+        match = m.passHash ? await verifyPassword(pwd, m.passHash) : false;
+      } catch {
+        match = false;
       }
       if (match) {
         setUser({ name: m.name, role: m.role });
@@ -543,9 +557,10 @@ export default function App() {
       const ok = await verifyPassword(sp, stored);
       if (su === "superadmin" && ok) { localStorage.setItem("eos3_session", JSON.stringify({ user: { name: "Super Admin", role: "super" }, schoolId: null, step: "super" })); setStep("super"); setLoading(false); return; }
     } else {
-      // First time: accept default and store hash
-      if (su === "superadmin" && sp === "super2025") {
-        const h = await hashPassword("super2025");
+      // First-time setup: user chooses their own super admin password.
+      // Any password ≥ 8 chars becomes the permanent super admin password.
+      if (su === "superadmin" && sp && sp.length >= 8) {
+        const h = await hashPassword(sp);
         await db.set("eos3_super_hash", h);
         localStorage.setItem("eos3_session", JSON.stringify({ user: { name: "Super Admin", role: "super" }, schoolId: null, step: "super" }));
         setStep("super"); setLoading(false); return;
@@ -1248,7 +1263,7 @@ export default function App() {
             const sc = (licForm.school.toUpperCase().padEnd(6, "0")).slice(0, 6);
             const payload = sc + licForm.plan + licForm.type + String(Number(licForm.devices)).padStart(2, "0") + (licForm.type === "P" ? "99991231" : licForm.expiry.replace(/-/g, ""));
             if (payload.length !== 18) return;
-            const secret = "ecoleos_license_secret_change_me_in_production_2025";
+            const secret = import.meta.env.VITE_LICENSE_CHECK_KEY || "ecoleos_client_check_key_not_a_secret";
             const enc = new TextEncoder();
             const keyMat = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
             const sigBuf = await crypto.subtle.sign("HMAC", keyMat, enc.encode(payload));

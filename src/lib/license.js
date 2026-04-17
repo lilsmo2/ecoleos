@@ -1,12 +1,26 @@
 /**
  * ÉcoleOS License Validation (Client-Side)
- * Uses Web Crypto API for HMAC verification in the browser.
+ *
+ * ⚠️  SECURITY NOTE
+ * This client-side check is UX ONLY. Any secret shipped to the browser
+ * can be extracted by a determined user, so treat any local `valid=true`
+ * as advisory. The server is the authority: when online, the app MUST
+ * call POST /api/license/verify and trust the server's answer.
+ *
+ * The client check is still useful to:
+ *   - give fast feedback on malformed/expired keys offline,
+ *   - decode the payload fields (school code, plan, device limit, expiry).
+ *
+ * The HMAC secret below only protects against casual key-forgery tools;
+ * it is not a security boundary. Keep the real secret server-side in
+ * ECOLEOS_LICENSE_SECRET and re-verify on every app start when online.
  */
 
-// Verification key (must match server's ECOLEOS_LICENSE_SECRET)
-// Stored as char codes for basic obfuscation — update for production
-const _VK = [101,99,111,108,101,111,115,95,108,105,99,101,110,115,101,95,115,101,99,114,101,116,95,99,104,97,110,103,101,95,109,101,95,105,110,95,112,114,111,100,117,99,116,105,111,110,95,50,48,50,53];
-const getVK = () => String.fromCharCode(..._VK);
+// Build-time-injectable low-trust verification key. Override in Vite via
+// `VITE_LICENSE_CHECK_KEY` if you want to rotate it without a code change.
+const getVK = () =>
+  (import.meta.env && import.meta.env.VITE_LICENSE_CHECK_KEY) ||
+  "ecoleos_client_check_key_not_a_secret";
 
 const PLAN_REVERSE = { "0": "essai", "1": "basique", "2": "standard", "3": "premium" };
 const TYPE_REVERSE = { P: "permanent", S: "subscription" };
