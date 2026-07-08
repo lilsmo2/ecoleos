@@ -15,13 +15,21 @@
  *   node generate-license.js ECOLE1 2 S 5 2027-12-31
  */
 
-const crypto = require("crypto");
+import crypto from "crypto";
 
-const SECRET = process.env.ECOLEOS_LICENSE_SECRET;
+// SINGLE SOURCE OF TRUTH for the license-signing secret.
+// This MUST be the exact same value the browser verifies with, i.e. the
+// VITE_LICENSE_CHECK_KEY you set at build time (see src/lib/license.js and
+// server/.env.example). If these two ever differ, EVERY generated key fails.
+// VITE_LICENSE_CHECK_KEY is preferred; ECOLEOS_LICENSE_SECRET is kept as a
+// legacy fallback so old setups don't break.
+const SECRET = process.env.VITE_LICENSE_CHECK_KEY || process.env.ECOLEOS_LICENSE_SECRET;
 if (!SECRET || SECRET.length < 32) {
-  console.error("ECOLEOS_LICENSE_SECRET env var is required (min 32 chars).");
+  console.error("VITE_LICENSE_CHECK_KEY env var is required (min 32 chars).");
+  console.error("It MUST match the VITE_LICENSE_CHECK_KEY used in your Vercel build,");
+  console.error("otherwise generated keys will not validate in the browser.");
   console.error("Set it before running, e.g.:");
-  console.error("  ECOLEOS_LICENSE_SECRET=... node generate-license.js ...");
+  console.error("  VITE_LICENSE_CHECK_KEY=... node generate-license.js ...");
   process.exit(1);
 }
 const PLAN_LABELS = { "0": "Essai", "1": "Basique", "2": "Standard", "3": "Premium" };

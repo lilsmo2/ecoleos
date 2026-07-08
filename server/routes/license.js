@@ -18,7 +18,8 @@ function hexToAscii(hex) {
 // Body: { key }
 // Returns: { valid, school, plan, type, devices, expiry, isPermanent }
 router.post("/verify", (req, res) => {
-  const SECRET = process.env.ECOLEOS_LICENSE_SECRET;
+  // Same secret as the generator and the browser client (see generate-license.js).
+  const SECRET = process.env.VITE_LICENSE_CHECK_KEY || process.env.ECOLEOS_LICENSE_SECRET;
   if (!SECRET || SECRET.length < 32) {
     return res.status(500).json({ valid: false, error: "License secret not configured" });
   }

@@ -18,9 +18,16 @@
 
 // Build-time-injectable low-trust verification key. Override in Vite via
 // `VITE_LICENSE_CHECK_KEY` if you want to rotate it without a code change.
-const getVK = () =>
-  (import.meta.env && import.meta.env.VITE_LICENSE_CHECK_KEY) ||
-  "ecoleos_client_check_key_not_a_secret";
+const getVK = () => {
+  const vk = import.meta.env && import.meta.env.VITE_LICENSE_CHECK_KEY;
+  if (!vk && import.meta.env && import.meta.env.PROD) {
+    // Loud warning: if this fires in production, the build has no
+    // VITE_LICENSE_CHECK_KEY and is silently using the public fallback,
+    // which will NOT match keys signed with your real secret.
+    console.warn("[license] VITE_LICENSE_CHECK_KEY is not set at build time; using insecure fallback. Generated keys will fail unless signed with the same fallback.");
+  }
+  return vk || "ecoleos_client_check_key_not_a_secret";
+};
 
 const PLAN_REVERSE = { "0": "essai", "1": "basique", "2": "standard", "3": "premium" };
 const TYPE_REVERSE = { P: "permanent", S: "subscription" };
