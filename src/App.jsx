@@ -939,6 +939,65 @@ export default function App() {
   }
 
   // ══════════════ LICENSE ACTIVATION ══════════════
+  // Shared connection-settings modal (usable from login screen and in-app).
+  const openConnection = () => {
+    const c = db.getConfig();
+    setForm({ serverUrl: c.serverUrl || "", mode: c.mode || "offline", testResult: null });
+    setModal("connection");
+  };
+  const connectionModalEl = modal === "connection" ? (
+    <Modal2
+          title="Paramètres de Connexion"
+          onClose={() => setModal(null)}
+          footer={
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn variant="ghost" onClick={() => setModal(null)}>Annuler</Btn>
+              <Btn onClick={() => saveConnection({ mode: form.mode, serverUrl: form.mode !== "offline" ? form.serverUrl : null, token: connConfig.token, refreshToken: connConfig.refreshToken })}>Enregistrer</Btn>
+            </div>
+          }
+        >
+          <div style={{ marginBottom: 16 }}>
+            <div style={S.label}>Mode de connexion</div>
+            <select style={S.input} value={form.mode || "offline"} onChange={e => setForm(f => ({ ...f, mode: e.target.value, testResult: null }))}>
+              <option value="offline">Hors ligne (localStorage uniquement)</option>
+              <option value="local">Serveur local (LAN)</option>
+              <option value="cloud">Serveur cloud</option>
+            </select>
+          </div>
+          {form.mode !== "offline" && (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <div style={S.label}>URL du serveur</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    style={{ ...S.input, flex: 1 }}
+                    value={form.serverUrl || ""}
+                    onChange={e => setForm(f => ({ ...f, serverUrl: e.target.value, testResult: null }))}
+                    placeholder={form.mode === "local" ? "http://192.168.1.100:4000" : "https://ecoleos.example.com"}
+                  />
+                  <Btn variant="ghost" small onClick={testServerConnection}>Tester</Btn>
+                </div>
+              </div>
+              {form.testResult && (
+                <div style={{ marginBottom: 16, padding: 10, borderRadius: 6, fontSize: 13, background: form.testResult === "ok" ? "rgba(0,184,148,0.12)" : form.testResult === "fail" ? "rgba(255,107,107,0.12)" : "rgba(108,92,231,0.12)", color: form.testResult === "ok" ? T.accent : form.testResult === "fail" ? T.danger : T.accent }}>
+                  {form.testResult === "ok" ? "Connexion réussie" : form.testResult === "fail" ? "Impossible de joindre le serveur" : "Test en cours..."}
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6 }}>
+                {form.mode === "local"
+                  ? "Entrez l'adresse IP et le port du serveur sur votre réseau local. Ex : http://192.168.1.100:4000"
+                  : "Entrez l'URL complète de votre serveur cloud. Ex : https://ecoleos.example.com"}
+              </div>
+            </>
+          )}
+          {form.mode === "offline" && (
+            <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6, padding: 12, background: T.surface2, borderRadius: 6 }}>
+              En mode hors ligne, toutes les données sont stockées localement sur cet appareil. Utilisez l'export/import pour partager les données entre appareils.
+            </div>
+          )}
+        </Modal2>
+  ) : null;
+
   if (step === "license") {
     const enterLicense = e => { if (e.key === "Enter") doActivateLicense(); };
     return (
@@ -1007,7 +1066,12 @@ export default function App() {
             <input style={S.input} type="password" value={pwd} onChange={e => { setPwd(e.target.value); setErr(""); }} placeholder="••••••••" onKeyDown={enterLogin} />
           </div>
           <Btn full onClick={doLogin} loading={loading}>Se Connecter</Btn>
-          <div style={{ marginTop: 22, borderTop: `1px solid ${T.border}`, paddingTop: 14 }}>
+          <div style={{ marginTop: 14, textAlign: "center" }}>
+            <span style={{ fontSize: 11, color: connConfig.mode !== "offline" ? T.accent : T.text3, cursor: "pointer", letterSpacing: 0.4 }} onClick={openConnection}>
+              {connConfig.mode !== "offline" ? "\u25CF Serveur cloud connect\u00e9" : "\u25CB Hors ligne"} \u00b7 Configurer le serveur
+            </span>
+          </div>
+          <div style={{ marginTop: 12, borderTop: `1px solid ${T.border}`, paddingTop: 14 }}>
             {!superMode ? (
               <div style={{ textAlign: "center" }}>
                 <span style={{ fontSize: 11, color: T.text3, cursor: "pointer", letterSpacing: 0.5 }} onClick={() => setSuperMode(true)}>Administration plateforme</span>
@@ -1030,6 +1094,7 @@ export default function App() {
             )}
           </div>
         </div>
+        {connectionModalEl}
       </div>
     );
   }
@@ -4422,58 +4487,7 @@ export default function App() {
       </div>
 
       {/* Connection settings modal */}
-      {modal === "connection" && (
-        <Modal2
-          title="Paramètres de Connexion"
-          onClose={() => setModal(null)}
-          footer={
-            <div style={{ display: "flex", gap: 8 }}>
-              <Btn variant="ghost" onClick={() => setModal(null)}>Annuler</Btn>
-              <Btn onClick={() => saveConnection({ mode: form.mode, serverUrl: form.mode !== "offline" ? form.serverUrl : null, token: connConfig.token, refreshToken: connConfig.refreshToken })}>Enregistrer</Btn>
-            </div>
-          }
-        >
-          <div style={{ marginBottom: 16 }}>
-            <div style={S.label}>Mode de connexion</div>
-            <select style={S.input} value={form.mode || "offline"} onChange={e => setForm(f => ({ ...f, mode: e.target.value, testResult: null }))}>
-              <option value="offline">Hors ligne (localStorage uniquement)</option>
-              <option value="local">Serveur local (LAN)</option>
-              <option value="cloud">Serveur cloud</option>
-            </select>
-          </div>
-          {form.mode !== "offline" && (
-            <>
-              <div style={{ marginBottom: 16 }}>
-                <div style={S.label}>URL du serveur</div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input
-                    style={{ ...S.input, flex: 1 }}
-                    value={form.serverUrl || ""}
-                    onChange={e => setForm(f => ({ ...f, serverUrl: e.target.value, testResult: null }))}
-                    placeholder={form.mode === "local" ? "http://192.168.1.100:4000" : "https://ecoleos.example.com"}
-                  />
-                  <Btn variant="ghost" small onClick={testServerConnection}>Tester</Btn>
-                </div>
-              </div>
-              {form.testResult && (
-                <div style={{ marginBottom: 16, padding: 10, borderRadius: 6, fontSize: 13, background: form.testResult === "ok" ? "rgba(0,184,148,0.12)" : form.testResult === "fail" ? "rgba(255,107,107,0.12)" : "rgba(108,92,231,0.12)", color: form.testResult === "ok" ? T.accent : form.testResult === "fail" ? T.danger : T.accent }}>
-                  {form.testResult === "ok" ? "Connexion réussie" : form.testResult === "fail" ? "Impossible de joindre le serveur" : "Test en cours..."}
-                </div>
-              )}
-              <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6 }}>
-                {form.mode === "local"
-                  ? "Entrez l'adresse IP et le port du serveur sur votre réseau local. Ex : http://192.168.1.100:4000"
-                  : "Entrez l'URL complète de votre serveur cloud. Ex : https://ecoleos.example.com"}
-              </div>
-            </>
-          )}
-          {form.mode === "offline" && (
-            <div style={{ fontSize: 12, color: T.text3, lineHeight: 1.6, padding: 12, background: T.surface2, borderRadius: 6 }}>
-              En mode hors ligne, toutes les données sont stockées localement sur cet appareil. Utilisez l'export/import pour partager les données entre appareils.
-            </div>
-          )}
-        </Modal2>
-      )}
+      {connectionModalEl}
 
       {/* Import data modal */}
       {modal === "importData" && (
