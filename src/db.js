@@ -10,35 +10,25 @@ const SYNC_QUEUE_KEY = "eos3_sync_queue";
 
 // ── Key-to-API endpoint mapping ──
 function keyToEndpoint(k) {
-  // eos3_stu_<schoolId> → /api/schools/<schoolId>/students
-  // eos3_stf_<schoolId> → /api/schools/<schoolId>/staff
-  // eos3_fin_<schoolId> → /api/schools/<schoolId>/finances
-  // eos3_bud_<schoolId> → /api/schools/<schoolId>/budgets
-  // eos3_att_<schoolId> → /api/schools/<schoolId>/attendance
-  // eos3_grd_<schoolId> → /api/schools/<schoolId>/grades
-  // eos3_dsc_<schoolId> → /api/schools/<schoolId>/discipline
-  // eos3_tmt_<schoolId> → /api/schools/<schoolId>/timetable
-  // eos3_msg_<schoolId> → /api/schools/<schoolId>/announcements
-  // eos3_par_<schoolId> → /api/schools/<schoolId>/parentaccess
-  // eos3_schools         → /api/schools
-  const match = k.match(/^eos3_(stu|stf|fin|bud|att|grd|dsc|tmt|msg|par|stup)_(.+)$/);
-  if (match) {
+  // Typed collections the server queries directly (login lookups, reports).
+  const typed = k.match(/^eos3_(stu|stf|fin|bud|stup)_(.+)$/);
+  if (typed) {
     const typeMap = {
       stu:  "students",
       stf:  "staff",
       fin:  "finances",
       bud:  "budgets",
-      att:  "attendance",
-      grd:  "grades",
-      dsc:  "discipline",
-      tmt:  "timetable",
-      msg:  "announcements",
-      par:  "parentaccess",
       stup: "tuition-payments",   // student tuition payment receipts
     };
-    return `/api/schools/${match[2]}/${typeMap[match[1]]}`;
+    return `/api/schools/${typed[2]}/${typeMap[typed[1]]}`;
   }
   if (k === "eos3_schools") return "/api/schools";
+  // Every other per-school blob (classes, exams, incidents, cantine, books,
+  // loans, payroll, timetable, grades, attendance, announcements, parent
+  // access, tuition config, seating, logo) + the global super_payments list
+  // round-trips through the generic key/value store.
+  if (k === "eos3_super_payments") return "/api/store/eos3_super_payments";
+  if (/^eos3_[a-z]+_.+$/.test(k)) return `/api/store/${k}`;
   return null;
 }
 
@@ -182,10 +172,13 @@ export const db = {
       const json = JSON.stringify(v);
       localStorage.setItem(k, json);
 
-      // Queue for sync if online
-      if (isOnline()) {
+      // Queue for sync whenever a server is configured — even if we're
+      // momentarily offline. The queue is flushed on reconnect (see the
+      // "online" handler in App.jsx), so data created offline still uploads.
+      const cfg = getConfig();
+      if (cfg.mode !== "offline" && cfg.serverUrl && keyToEndpoint(k)) {
         addToSyncQueue(k, v);
-        processSyncQueue(); // fire-and-forget
+        if (navigator.onLine) processSyncQueue(); // fire-and-forget
       }
     } catch {
       // Storage error
@@ -195,6 +188,111 @@ export const db = {
   // Manual sync trigger
   async sync() {
     await processSyncQueue();
+  },
+
+  // ── Server-backed auth (used in cloud/local mode) ──
+
+  // Log a school user (admin/staff) in against the server. On success, stores
+  // the JWT tokens and returns the authenticated user plus their school record.
+  async serverLogin(schoolCode, username, password) {
+    const cfg = getConfig();
+    if (!cfg.serverUrl) return { ok: false, error: "Aucun serveur configuré" };
+    const base = cfg.serverUrl.replace(/\/+$/, "");
+    const res = await fetch(base + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ schoolCode, username, password }),
+    });
+    if (!res.ok) {
+      let error = "Identifiant ou mot de passe incorrect";
+      try { error = (await res.json()).error || error; } catch { /* noop */ }
+      return { ok: false, error };
+    }
+    const { token, refreshToken, user } = await res.json();
+    setConfig({ ...cfg, token, refreshToken });
+    let school = null;
+    try {
+      const sres = await apiFetch("/api/schools/" + user.schoolId);
+      if (sres.ok) {
+        const j = await sres.json();
+        school = j.data ? { ...j.data, id: j.data._id || j.data.id } : null;
+      }
+    } catch { /* school fetch failed; caller handles null */ }
+    return { ok: true, user, school };
+  },
+
+  // Log the super admin in against the server.
+  async superServerLogin(username, password) {
+    const cfg = getConfig();
+    if (!cfg.serverUrl) return { ok: false, error: "Aucun serveur configuré" };
+    const base = cfg.serverUrl.replace(/\/+$/, "");
+    const res = await fetch(base + "/api/auth/super-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) {
+      let error = "Identifiants incorrects";
+      try { error = (await res.json()).error || error; } catch { /* noop */ }
+      return { ok: false, error };
+    }
+    const { token, refreshToken, user } = await res.json();
+    setConfig({ ...cfg, token, refreshToken });
+    return { ok: true, user };
+  },
+
+  // Fetch the full schools list from the server (super admin only).
+  async fetchSchools() {
+    try {
+      const res = await apiFetch("/api/schools");
+      if (!res.ok) return null;
+      const j = await res.json();
+      return (j.data || []).map(sc => ({ ...sc, id: sc._id || sc.id }));
+    } catch {
+      return null;
+    }
+  },
+
+  // Create/update a school on the server (super admin). Pass the plaintext
+  // adminPass so the server can store a bcrypt hash for server-side login.
+  async pushSchool(school, adminPass) {
+    try {
+      const body = {
+        id: school.id,
+        name: school.name,
+        city: school.city,
+        code: school.code,
+        adminUser: school.adminUser,
+        plan: school.plan,
+        subEnd: school.subEnd,
+        subStatus: school.subStatus,
+      };
+      if (adminPass) body.adminPass = adminPass;
+      const res = await apiFetch("/api/schools", { method: "POST", body: JSON.stringify(body) });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  // Register/refresh a staff member's server login (bcrypt) so they can sign in
+  // from any device. Pass the plaintext password entered in the staff form.
+  async pushStaffCredential(schoolId, staffMember, password) {
+    try {
+      const res = await apiFetch(`/api/schools/${schoolId}/staff-credentials`, {
+        method: "POST",
+        body: JSON.stringify({
+          id: staffMember.id,
+          username: staffMember.username,
+          name: staffMember.name,
+          role: staffMember.role,
+          password,
+        }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 
   // Get pending sync count

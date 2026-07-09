@@ -9,6 +9,8 @@ import authRoutes from "./routes/auth.js";
 import schoolRoutes from "./routes/schools.js";
 import syncRoutes from "./routes/sync.js";
 import licenseRoutes from "./routes/license.js";
+import storeRoutes from "./routes/store.js";
+import staffAuthRoutes from "./routes/staffAuth.js";
 import { createCrudRouter } from "./routes/crud.js";
 
 import Student from "./models/Student.js";
@@ -44,13 +46,21 @@ app.use(
     origin: (origin, cb) => {
       if (!origin) return cb(null, true); // same-origin / curl
       if (allowedOrigins.includes(origin)) return cb(null, true);
+      // Also allow localhost (any port) and Vercel deployments so the hosted
+      // frontend can reach the API without hand-maintaining every URL.
+      try {
+        const host = new URL(origin).hostname;
+        if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".vercel.app")) {
+          return cb(null, true);
+        }
+      } catch { /* malformed origin */ }
       return cb(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "6mb" }));
 
 // Brute-force protection on auth endpoints
 const authLimiter = rateLimit({
@@ -73,6 +83,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/schools", schoolRoutes);
 app.use("/api/sync", syncRoutes);
 app.use("/api/license", licenseRoutes);
+app.use("/api/store", storeRoutes);
+app.use("/api/schools/:schoolId/staff-credentials", staffAuthRoutes);
 
 // ── Per-school CRUD routes (each with an explicit field allowlist) ──
 app.use(

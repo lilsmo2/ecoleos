@@ -42,20 +42,35 @@ router.get("/:id", authenticate, async (req, res) => {
   }
 });
 
-// POST /api/schools — create (superadmin)
+// POST /api/schools — create or upsert (superadmin)
+// Accepts an optional client-generated id so the school's _id matches the id
+// the frontend already uses as the tenant key for all per-school data.
+// Idempotent: pushing the same school again updates it instead of failing.
 router.post("/", authenticate, roleGuard(["superadmin"]), async (req, res) => {
   try {
     const data = pick(req.body, CREATE_FIELDS);
     if (!data.code) return res.status(400).json({ error: "Code requis" });
+    const id = req.body.id || req.body._id;
     const { adminPass } = req.body;
-    const adminPassHash = adminPass ? await bcrypt.hash(adminPass, 10) : undefined;
-    const school = await School.create({
+
+    const doc = {
       ...data,
       code: data.code.toUpperCase(),
-      adminPassHash,
       plan: data.plan || "essai",
       subStatus: data.subStatus || "actif",
-    });
+    };
+    if (adminPass) doc.adminPassHash = await bcrypt.hash(adminPass, 10);
+
+    let school;
+    if (id) {
+      school = await School.findByIdAndUpdate(
+        id,
+        { ...doc, _id: id },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).lean();
+    } else {
+      school = (await School.create(doc)).toObject();
+    }
     res.status(201).json({ data: school });
   } catch (err) {
     res.status(500).json({ error: err.message });

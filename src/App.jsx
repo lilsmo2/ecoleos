@@ -546,6 +546,34 @@ export default function App() {
   const doLogin = useCallback(async () => {
     if (!code || !uid || !pwd) { setErr("Remplissez tous les champs"); return; }
     setLoading(true);
+    setErr("");
+
+    // Cloud/local mode: authenticate against the server so a device that has
+    // never seen this school can still log in (the school lives on the server,
+    // not just in this browser). Falls back to local login if unreachable.
+    const _cfg = db.getConfig();
+    if (_cfg.mode !== "offline" && _cfg.serverUrl) {
+      try {
+        const r = await db.serverLogin(code.trim(), uid.trim(), pwd);
+        if (r.ok && r.school) {
+          const srv = { ...r.school };
+          setSchool(srv);
+          setSchools(prev => [...prev.filter(s => s.id !== srv.id), srv]);
+          const sdl = Math.ceil((new Date(srv.subEnd) - new Date()) / 86400000);
+          const sexpired = sdl <= 0 || srv.subStatus === "suspendu" || srv.subStatus === "expir\u00e9";
+          setUser({ name: r.user.name, role: r.user.role });
+          if (sexpired) { setStep("blocked"); setLoading(false); return; }
+          await loadSchool(srv.id);
+          localStorage.setItem("eos3_session", JSON.stringify({ user: { name: r.user.name, role: r.user.role }, schoolId: srv.id, step: "app" }));
+          setStep("app"); setPage("dash"); setLoading(false); return;
+        }
+        if (r.ok && !r.school) { setErr("Connect\u00e9, mais \u00e9tablissement introuvable sur le serveur"); setLoading(false); return; }
+        setErr(r.error || "Identifiant ou mot de passe incorrect"); setLoading(false); return;
+      } catch {
+        // Server unreachable — continue to local/offline login below.
+      }
+    }
+
     const sc = schools.find(s => s.code.toLowerCase() === code.trim().toLowerCase());
     if (!sc) { setErr("Code introuvable"); setLoading(false); return; }
     setSchool(sc);
@@ -595,6 +623,26 @@ export default function App() {
 
   const doSuper = useCallback(async () => {
     setLoading(true);
+    setSuperErr("");
+
+    // Cloud/local mode: try the server super-login first so the schools list
+    // comes from the shared database. Falls back to the local super hash.
+    const _scfg = db.getConfig();
+    if (_scfg.mode !== "offline" && _scfg.serverUrl) {
+      try {
+        const r = await db.superServerLogin(su.trim(), sp);
+        if (r.ok) {
+          const serverSchools = await db.fetchSchools();
+          if (serverSchools) setSchools(serverSchools);
+          localStorage.setItem("eos3_session", JSON.stringify({ user: { name: "Super Admin", role: "super" }, schoolId: null, step: "super" }));
+          setStep("super"); setLoading(false); return;
+        }
+        // Server rejected credentials — fall through to local super check.
+      } catch {
+        // Server unreachable — fall through to local super check.
+      }
+    }
+
     // Check stored super hash, or verify against default
     const stored = await db.get("eos3_super_hash");
     if (stored) {
@@ -1012,6 +1060,12 @@ export default function App() {
       const passHash = await hashPassword(cf.adminPass);
       const ns = { id: genId(), name: cf.name, city: cf.city, code: c, adminUser: cf.adminUser, adminPassHash: passHash, plan: cf.plan, subEnd: new Date(Date.now() + dur * 86400000).toISOString().slice(0, 10), subStatus: "actif" };
       await saveSchools([...schools, ns]);
+      // In cloud/local mode, register the school on the server (with the
+      // plaintext password so the server stores a bcrypt hash for login).
+      const _ccfg = db.getConfig();
+      if (_ccfg.mode !== "offline" && _ccfg.serverUrl) {
+        await db.pushSchool(ns, cf.adminPass);
+      }
       setCreateMode(false); setCErr("");
       setSaving(false);
     };
@@ -1427,7 +1481,12 @@ export default function App() {
     if (!form.name || !form.username || !form.password) return;
     if (form.password.length < 6) return;
     const passHash = await hashPassword(form.password);
-    await saveStaff([...staff, { id: genId(), name: form.name, username: form.username, passHash, role: form.role, customRole: form.customRole || "", subject: form.subject || "", status: "actif" }]);
+    const ns = { id: genId(), name: form.name, username: form.username, passHash, role: form.role, customRole: form.customRole || "", subject: form.subject || "", status: "actif" };
+    await saveStaff([...staff, ns]);
+    const _cfg = db.getConfig();
+    if (_cfg.mode !== "offline" && _cfg.serverUrl && school?.id) {
+      await db.pushStaffCredential(school.id, ns, form.password);
+    }
     setModal(null);
   };
 
@@ -1445,6 +1504,13 @@ export default function App() {
       if (idx >= 0) updated[idx].passHash = hash;
     }
     await saveStaff(updated);
+    if (form.password) {
+      const _cfg = db.getConfig();
+      const m2 = updated.find(s => s.id === form.id);
+      if (_cfg.mode !== "offline" && _cfg.serverUrl && school?.id && m2) {
+        await db.pushStaffCredential(school.id, m2, form.password);
+      }
+    }
     setModal(null);
   };
 
@@ -1629,6 +1695,10 @@ export default function App() {
                     if (!ok) { setPwErr("Mot de passe actuel incorrect"); return; }
                     const newHash = await hashPassword(pwForm.next);
                     await saveSchools(schools.map(s => s.id === sc.id ? { ...s, adminPassHash: newHash } : s));
+                    const _acfg = db.getConfig();
+                    if (_acfg.mode !== "offline" && _acfg.serverUrl) {
+                      await db.pushSchool({ ...sc, adminPassHash: newHash }, pwForm.next);
+                    }
                   } else {
                     const stf = await db.get("eos3_stf_" + school?.id) || [];
                     const m = stf.find(s => s.name === user?.name);
@@ -1637,6 +1707,10 @@ export default function App() {
                     if (!ok) { setPwErr("Mot de passe actuel incorrect"); return; }
                     const newHash = await hashPassword(pwForm.next);
                     await saveStaff(stf.map(s => s === m ? { ...s, passHash: newHash } : s));
+                    const _scfg = db.getConfig();
+                    if (_scfg.mode !== "offline" && _scfg.serverUrl && school?.id) {
+                      await db.pushStaffCredential(school.id, { ...m, passHash: newHash }, pwForm.next);
+                    }
                   }
                   setPwOk(true); setPwForm({ current: "", next: "", confirm: "" });
                 }}>Changer le mot de passe</Btn>
